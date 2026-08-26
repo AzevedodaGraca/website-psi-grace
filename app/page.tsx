@@ -11,6 +11,7 @@ import SpecialtiesSection from "@/components/home/SpecialtiesSection";
 import ClinicGallerySection from "@/components/home/ClinicGallerySection";
 import LocationContactSection from "@/components/home/LocationContactSection";
 import FaqSection from "@/components/home/FaqSection";
+import SchedulingSection from "@/components/home/SchedulingSection";
 
 export default function Home() {
   return (
@@ -33,8 +34,8 @@ export default function Home() {
         <LocationContactSection />
         <FaqSection />
 
-        {/* Placeholder anchor for Phase 5 scheduling UI */}
-        <section id="marcacao" className="scroll-mt-24" />
+        {/* Phase 5 Appointment Scheduling UI */}
+        <SchedulingSection />
       </main>
 
       {/* Footer Layout Component */}
