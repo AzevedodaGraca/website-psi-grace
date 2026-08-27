@@ -13,6 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://grcpsi.pt"),
   title: "Grace Azevedo da Graça | Psicóloga Clínica em Ovar - OPP 25999",
   description:
     "Gabinete de Psicologia Clínica em Ovar, Aveiro. Atendimento presencial e online para crianças, adolescentes, adultos, casais e famílias. Registo OPP 25999.",
@@ -26,6 +27,13 @@ export const metadata: Metadata = {
     "Psicologia Aveiro",
   ],
   authors: [{ name: "Grace Azevedo da Graça" }],
+  alternates: {
+    canonical: "/",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
   openGraph: {
     title: "Grace Azevedo da Graça | Psicóloga Clínica em Ovar - OPP 25999",
     description:
@@ -41,6 +49,13 @@ export const metadata: Metadata = {
         alt: "Identidade Visual Psicóloga Grace Azevedo da Graça",
       },
     ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Grace Azevedo da Graça | Psicóloga Clínica em Ovar - OPP 25999",
+    description:
+      "Gabinete de Psicologia Clínica em Ovar, Aveiro. Atendimento presencial e online. Registo OPP 25999.",
+    images: ["/assets/branding/arvore.png"],
   },
   icons: {
     icon: "/assets/branding/arvore.png",

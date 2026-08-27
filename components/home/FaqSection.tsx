@@ -133,12 +133,12 @@ export default function FaqSection() {
               Falar no WhatsApp
             </a>
 
-            <Link
+            <a
               href="#marcacao"
               className="inline-flex items-center justify-center px-5 py-3 bg-white border border-[#d1e3d5] hover:border-[#2e6f40] text-[#1d2a23] text-xs font-semibold rounded-xl shadow-xs transition-colors"
             >
               Marcar Consulta
-            </Link>
+            </a>
           </div>
         </div>
       </div>
