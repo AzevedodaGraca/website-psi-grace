@@ -57,6 +57,13 @@ export interface AvailabilitySchedule {
   updated_at: string;
 }
 
+export interface AdminUser {
+  id: string;
+  user_id?: string | null;
+  email?: string | null;
+  created_at: string;
+}
+
 // Database Schema interface for Supabase Client
 export interface Database {
   public: {
@@ -78,6 +85,14 @@ export interface Database {
           updated_at?: string;
         };
         Update: Partial<Omit<AvailabilitySchedule, "id">>;
+      };
+      admin_users: {
+        Row: AdminUser;
+        Insert: Omit<AdminUser, "id" | "created_at"> & {
+          id?: string;
+          created_at?: string;
+        };
+        Update: Partial<Omit<AdminUser, "id">>;
       };
     };
   };
