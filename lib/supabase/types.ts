@@ -32,7 +32,7 @@ export const FULL_HOUR_SLOTS: FullHourTimeSlot[] = [
   "20:00",
 ];
 
-export interface Appointment {
+export type Appointment = {
   id: string;
   appointment_type: AppointmentType;
   appointment_date: string; // ISO Date 'YYYY-MM-DD'
@@ -44,9 +44,9 @@ export interface Appointment {
   status: AppointmentStatus;
   created_at: string;
   updated_at: string;
-}
+};
 
-export interface AvailabilitySchedule {
+export type AvailabilitySchedule = {
   id: string;
   schedule_date?: string | null; // ISO Date 'YYYY-MM-DD' if specific date override
   day_of_week?: number | null; // 0-6 (Sun-Sat) if recurring weekly schedule
@@ -55,14 +55,14 @@ export interface AvailabilitySchedule {
   is_blocked: boolean;
   created_at: string;
   updated_at: string;
-}
+};
 
-export interface AdminUser {
+export type AdminUser = {
   id: string;
   user_id?: string | null;
   email?: string | null;
   created_at: string;
-}
+};
 
 // Database Schema interface for Supabase Client
 export interface Database {
@@ -76,6 +76,7 @@ export interface Database {
           updated_at?: string;
         };
         Update: Partial<Omit<Appointment, "id">>;
+        Relationships: [];
       };
       availability_schedules: {
         Row: AvailabilitySchedule;
@@ -85,6 +86,7 @@ export interface Database {
           updated_at?: string;
         };
         Update: Partial<Omit<AvailabilitySchedule, "id">>;
+        Relationships: [];
       };
       admin_users: {
         Row: AdminUser;
@@ -93,7 +95,17 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<Omit<AdminUser, "id">>;
+        Relationships: [];
       };
     };
+    Views: Record<string, never>;
+    Functions: {
+      is_admin: {
+        Args: Record<string, never>;
+        Returns: boolean;
+      };
+    };
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
   };
 }
