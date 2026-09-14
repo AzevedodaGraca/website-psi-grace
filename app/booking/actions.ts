@@ -440,3 +440,272 @@ export async function createAppointmentBooking(
 ): Promise<BookingActionResult> {
   return bookAppointment(input);
 }
+
+export interface AvailableSlotsResult {
+  success: boolean;
+  slots: FullHourTimeSlot[];
+  isBlockedDate?: boolean;
+  error?: string;
+}
+
+export interface MonthScheduleResult {
+  success: boolean;
+  activeDaysOfWeek: number[]; // 0-6 (Sun-Sat)
+  blockedDates: string[]; // YYYY-MM-DD
+  datesWithOverrides: Record<string, boolean>; // YYYY-MM-DD -> has slots or not
+  error?: string;
+}
+
+/**
+ * Retrieves available full-hour slots for a specific date and appointment modality.
+ * Respects date-specific overrides, weekly default schedule, and excludes already booked appointments.
+ */
+export async function getAvailableSlots(
+  dateStr: string,
+  appointmentType: AppointmentType
+): Promise<AvailableSlotsResult> {
+  try {
+    if (appointmentType !== "presencial" && appointmentType !== "online") {
+      return { success: false, slots: [], error: "Modalidade inválida." };
+    }
+
+    if (!isValidCalendarDate(dateStr)) {
+      return { success: false, slots: [], error: "Data inválida." };
+    }
+
+    const nowInLisbon = await getNowInLisbon();
+    if (dateStr < nowInLisbon.dateStr) {
+      return { success: true, slots: [], isBlockedDate: true };
+    }
+
+    const supabaseAdmin = createServerSupabaseAdminClient();
+
+    // 1. Check date overrides for dateStr
+    const { data: dateOverrides, error: dateOverridesError } = await supabaseAdmin
+      .from("availability_schedules")
+      .select("id, schedule_date, day_of_week, appointment_type, time_slot, is_blocked")
+      .eq("schedule_date", dateStr);
+
+    if (dateOverridesError) {
+      console.error("Erro ao consultar exceções de disponibilidade:", {
+        message: dateOverridesError.message,
+        code: dateOverridesError.code,
+      });
+      return {
+        success: false,
+        slots: [],
+        error: "Erro ao consultar disponibilidade da agenda.",
+      };
+    }
+
+    let candidateSlots: FullHourTimeSlot[] = [];
+
+    if (dateOverrides && dateOverrides.length > 0) {
+      const isFullDayBlocked = dateOverrides.some((row) => row.is_blocked);
+      if (isFullDayBlocked) {
+        return { success: true, slots: [], isBlockedDate: true };
+      }
+
+      candidateSlots = dateOverrides
+        .filter((row) => row.appointment_type === appointmentType && !row.is_blocked)
+        .map((row) => row.time_slot as FullHourTimeSlot);
+    } else {
+      // 2. Check weekly schedule
+      const dayOfWeek = getDayOfWeek(dateStr);
+      const { data: weeklySchedule, error: weeklyError } = await supabaseAdmin
+        .from("availability_schedules")
+        .select("id, schedule_date, day_of_week, appointment_type, time_slot, is_blocked")
+        .is("schedule_date", null)
+        .eq("day_of_week", dayOfWeek);
+
+      if (weeklyError) {
+        console.error("Erro ao consultar horário semanal:", {
+          message: weeklyError.message,
+          code: weeklyError.code,
+        });
+        return {
+          success: false,
+          slots: [],
+          error: "Erro ao consultar disponibilidade da agenda.",
+        };
+      }
+
+      candidateSlots = (weeklySchedule || [])
+        .filter((row) => row.appointment_type === appointmentType && !row.is_blocked)
+        .map((row) => row.time_slot as FullHourTimeSlot);
+    }
+
+    if (candidateSlots.length === 0) {
+      return { success: true, slots: [] };
+    }
+
+    // 3. Check existing active appointments for dateStr
+    const { data: bookedData, error: bookedError } = await supabaseAdmin
+      .from("appointments")
+      .select("time_slot")
+      .eq("appointment_date", dateStr)
+      .in("status", ["pending", "confirmed"]);
+
+    if (bookedError) {
+      console.error("Erro ao consultar vagas ocupadas:", {
+        message: bookedError.message,
+        code: bookedError.code,
+      });
+      return {
+        success: false,
+        slots: [],
+        error: "Erro ao verificar vagas existentes.",
+      };
+    }
+
+    const bookedSlots = new Set((bookedData || []).map((row) => row.time_slot));
+    let availableSlots = candidateSlots.filter((slot) => !bookedSlots.has(slot));
+
+    // 4. If date is today in Lisbon, filter out past hours
+    if (dateStr === nowInLisbon.dateStr) {
+      availableSlots = availableSlots.filter((slot) => {
+        const [hourStr, minuteStr] = slot.split(":");
+        const hour = parseInt(hourStr, 10);
+        const minute = parseInt(minuteStr || "0", 10);
+        return hour > nowInLisbon.hour || (hour === nowInLisbon.hour && nowInLisbon.minute < minute);
+      });
+    }
+
+    // 5. Sort chronologically by FULL_HOUR_SLOTS order
+    availableSlots.sort((a, b) => FULL_HOUR_SLOTS.indexOf(a) - FULL_HOUR_SLOTS.indexOf(b));
+
+    return { success: true, slots: availableSlots };
+  } catch (err) {
+    console.error("Exceção inesperada em getAvailableSlots:", err);
+    return {
+      success: false,
+      slots: [],
+      error: "Ocorreu um erro ao carregar os horários disponíveis.",
+    };
+  }
+}
+
+/**
+ * Retrieves monthly availability metadata for the calendar view.
+ * Returns active recurring weekdays, explicitly blocked dates, and specific override dates.
+ */
+export async function getMonthSchedule(
+  year: number,
+  month: number, // 1-12
+  appointmentType: AppointmentType
+): Promise<MonthScheduleResult> {
+  try {
+    if (appointmentType !== "presencial" && appointmentType !== "online") {
+      return {
+        success: false,
+        activeDaysOfWeek: [],
+        blockedDates: [],
+        datesWithOverrides: {},
+        error: "Modalidade inválida.",
+      };
+    }
+
+    const supabaseAdmin = createServerSupabaseAdminClient();
+
+    // 1. Get weekly recurring days of week for this modality
+    const { data: weeklyData, error: weeklyError } = await supabaseAdmin
+      .from("availability_schedules")
+      .select("day_of_week")
+      .is("schedule_date", null)
+      .eq("appointment_type", appointmentType)
+      .eq("is_blocked", false);
+
+    if (weeklyError) {
+      console.error("Erro ao carregar dias da semana ativos:", {
+        message: weeklyError.message,
+        code: weeklyError.code,
+      });
+      return {
+        success: false,
+        activeDaysOfWeek: [],
+        blockedDates: [],
+        datesWithOverrides: {},
+        error: "Erro ao consultar agenda.",
+      };
+    }
+
+    const activeDaysOfWeek = Array.from(
+      new Set(
+        (weeklyData || [])
+          .map((row) => row.day_of_week)
+          .filter((dow): dow is number => dow !== null && dow !== undefined)
+      )
+    );
+
+    // 2. Query date overrides for this month
+    const startMonthStr = `${year}-${String(month).padStart(2, "0")}-01`;
+    const lastDayNum = new Date(Date.UTC(year, month, 0)).getUTCDate();
+    const endMonthStr = `${year}-${String(month).padStart(2, "0")}-${String(lastDayNum).padStart(2, "0")}`;
+
+    const { data: overrideData, error: overrideError } = await supabaseAdmin
+      .from("availability_schedules")
+      .select("schedule_date, appointment_type, is_blocked")
+      .gte("schedule_date", startMonthStr)
+      .lte("schedule_date", endMonthStr);
+
+    if (overrideError) {
+      console.error("Erro ao carregar exceções do mês:", {
+        message: overrideError.message,
+        code: overrideError.code,
+      });
+      return {
+        success: false,
+        activeDaysOfWeek,
+        blockedDates: [],
+        datesWithOverrides: {},
+        error: "Erro ao consultar agenda.",
+      };
+    }
+
+    const blockedDates: string[] = [];
+    const datesWithOverrides: Record<string, boolean> = {};
+
+    const byDate: Record<string, { hasBlocked: boolean; hasActiveSlotForModality: boolean }> = {};
+
+    (overrideData || []).forEach((row) => {
+      if (!row.schedule_date) return;
+      const d = row.schedule_date;
+      if (!byDate[d]) {
+        byDate[d] = { hasBlocked: false, hasActiveSlotForModality: false };
+      }
+      if (row.is_blocked) {
+        byDate[d].hasBlocked = true;
+      } else if (row.appointment_type === appointmentType) {
+        byDate[d].hasActiveSlotForModality = true;
+      }
+    });
+
+    Object.entries(byDate).forEach(([d, info]) => {
+      if (info.hasBlocked) {
+        blockedDates.push(d);
+        datesWithOverrides[d] = false;
+      } else {
+        datesWithOverrides[d] = info.hasActiveSlotForModality;
+        if (!info.hasActiveSlotForModality) {
+          blockedDates.push(d);
+        }
+      }
+    });
+
+    return {
+      success: true,
+      activeDaysOfWeek,
+      blockedDates,
+      datesWithOverrides,
+    };
+  } catch (err) {
+    console.error("Exceção inesperada em getMonthSchedule:", err);
+    return {
+      success: false,
+      activeDaysOfWeek: [],
+      blockedDates: [],
+      datesWithOverrides: {},
+      error: "Erro ao consultar agenda mensal.",
+    };
+  }
+}

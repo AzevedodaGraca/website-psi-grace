@@ -1,10 +1,15 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import {
+  bookAppointment,
+  getAvailableSlots,
+  getMonthSchedule,
+  type MonthScheduleResult,
+} from "@/app/booking/actions";
+import type { AppointmentType, FullHourTimeSlot } from "@/lib/supabase/types";
 
 // Types
-type AppointmentType = "presencial" | "online";
-
 interface PatientForm {
   name: string;
   email: string;
@@ -18,20 +23,12 @@ interface FormErrors {
   phone?: string;
 }
 
-const mockTimeSlots = [
-  "09:00",
-  "09:30",
-  "10:00",
-  "10:30",
-  "11:00",
-  "11:30",
-  "14:00",
-  "14:30",
-  "15:00",
-  "15:30",
-  "16:00",
-  "16:30",
-];
+function formatDateToIso(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
 export default function SchedulingSection() {
   // Stepper state: 1 (Type), 2 (Date & Time), 3 (Patient Info), 4 (Summary), 5 (Confirmed)
@@ -43,6 +40,12 @@ export default function SchedulingSection() {
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
 
+  // Real availability states from Supabase
+  const [monthSchedule, setMonthSchedule] = useState<MonthScheduleResult | null>(null);
+  const [availableSlots, setAvailableSlots] = useState<FullHourTimeSlot[]>([]);
+  const [isLoadingSlots, setIsLoadingSlots] = useState<boolean>(false);
+  const [slotsError, setSlotsError] = useState<string | null>(null);
+
   // Form states
   const [form, setForm] = useState<PatientForm>({
     name: "",
@@ -52,6 +55,78 @@ export default function SchedulingSection() {
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
+
+  // Submission states
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Load monthly availability schedule whenever currentMonth or appointmentType changes
+  useEffect(() => {
+    if (!appointmentType) return;
+    let isMounted = true;
+
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth() + 1;
+
+    getMonthSchedule(year, month, appointmentType)
+      .then((res) => {
+        if (isMounted && res.success) {
+          setMonthSchedule(res);
+        }
+      })
+      .catch((err) => {
+        console.error("Erro ao carregar calendário do mês:", err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentMonth, appointmentType]);
+
+  // Load available time slots when user selects a date
+  const handleSelectDate = (date: Date) => {
+    setSelectedDate(date);
+    setSelectedTime(null);
+    if (!appointmentType) return;
+
+    setIsLoadingSlots(true);
+    setSlotsError(null);
+
+    const dateStr = formatDateToIso(date);
+
+    getAvailableSlots(dateStr, appointmentType)
+      .then((res) => {
+        if (res.success) {
+          setAvailableSlots(res.slots);
+          if (res.slots.length === 0) {
+            if (res.isBlockedDate) {
+              setSlotsError("O consultório encontra-se encerrado na data selecionada.");
+            } else {
+              setSlotsError("Não existem horários disponíveis para a data selecionada.");
+            }
+          }
+        } else {
+          setSlotsError(res.error || "Não foi possível carregar os horários disponíveis.");
+        }
+        setIsLoadingSlots(false);
+      })
+      .catch((err) => {
+        console.error("Erro ao carregar horários disponíveis:", err);
+        setSlotsError("Erro ao comunicar com o servidor. Por favor, tente novamente.");
+        setIsLoadingSlots(false);
+      });
+  };
+
+  // Switch modality and reset dependent date/time selections
+  const handleSelectModality = (type: AppointmentType) => {
+    if (type !== appointmentType) {
+      setAppointmentType(type);
+      setSelectedDate(null);
+      setSelectedTime(null);
+      setAvailableSlots([]);
+      setSlotsError(null);
+    }
+  };
 
   // Helper date calculations for Calendar
   const calendarDays = useMemo(() => {
@@ -97,7 +172,30 @@ export default function SchedulingSection() {
     // Disable past dates
     if (date < today) return true;
 
-    // Disable weekends (0 = Sun, 6 = Sat)
+    // Use real database availability schedule if available
+    if (monthSchedule && monthSchedule.success) {
+      const isoDate = formatDateToIso(date);
+
+      // 1. Explicitly blocked date in override
+      if (monthSchedule.blockedDates.includes(isoDate)) {
+        return true;
+      }
+
+      // 2. Specific override with active slots
+      if (monthSchedule.datesWithOverrides[isoDate] === true) {
+        return false;
+      }
+
+      // 3. Weekly recurring days check
+      const day = date.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+      if (!monthSchedule.activeDaysOfWeek.includes(day)) {
+        return true;
+      }
+
+      return false;
+    }
+
+    // Fallback while loading: disable past dates and weekends (0 = Sun, 6 = Sat)
     const day = date.getDay();
     if (day === 0 || day === 6) return true;
 
@@ -108,7 +206,10 @@ export default function SchedulingSection() {
     const prev = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
     const today = new Date();
     // Don't navigate to months before current month
-    if (prev.getFullYear() < today.getFullYear() || (prev.getFullYear() === today.getFullYear() && prev.getMonth() < today.getMonth())) {
+    if (
+      prev.getFullYear() < today.getFullYear() ||
+      (prev.getFullYear() === today.getFullYear() && prev.getMonth() < today.getMonth())
+    ) {
       return;
     }
     setCurrentMonth(prev);
@@ -139,12 +240,51 @@ export default function SchedulingSection() {
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
+      setSubmitError(null);
       setStep(4); // Move to Summary step
     }
   };
 
-  const handleConfirmBooking = () => {
-    setStep(5); // Move to Success state
+  const handleConfirmBooking = async () => {
+    if (!appointmentType || !selectedDate || !selectedTime) {
+      setSubmitError("Por favor, selecione a modalidade, data e horário da consulta.");
+      return;
+    }
+    if (!form.name.trim() || !form.email.trim() || !form.phone.trim()) {
+      setSubmitError("Por favor, preencha os seus dados de contacto.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const result = await bookAppointment({
+        appointment_type: appointmentType,
+        appointment_date: formatDateToIso(selectedDate),
+        time_slot: selectedTime,
+        patient_name: form.name,
+        patient_email: form.email,
+        patient_phone: form.phone,
+        patient_notes: form.notes || undefined,
+      });
+
+      if (result.success) {
+        setStep(5); // Move to Success state
+      } else {
+        setSubmitError(
+          result.error ||
+            "Não foi possível registar o seu pedido de marcação. Por favor, tente novamente."
+        );
+      }
+    } catch (err) {
+      console.error("Erro na confirmação da marcação:", err);
+      setSubmitError(
+        "Ocorreu um erro inesperado ao comunicar com o servidor. Por favor, tente novamente."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const resetFlow = () => {
@@ -154,6 +294,9 @@ export default function SchedulingSection() {
     setSelectedTime(null);
     setForm({ name: "", email: "", phone: "", notes: "" });
     setErrors({});
+    setSubmitError(null);
+    setAvailableSlots([]);
+    setSlotsError(null);
     // Scroll smoothly to start of section
     const elem = document.getElementById("marcacao");
     if (elem) elem.scrollIntoView({ behavior: "smooth" });
@@ -195,7 +338,7 @@ export default function SchedulingSection() {
 
         {/* Card Container */}
         <div className="bg-white rounded-3xl border border-[#d1e3d5] shadow-lg p-6 sm:p-10 transition-all duration-300">
-          {/* STEP 1 & 2: Select Appointment Type */}
+          {/* STEP 1: Select Appointment Type */}
           {step === 1 && (
             <div className="space-y-8">
               <div>
@@ -210,7 +353,7 @@ export default function SchedulingSection() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {/* Option Presencial */}
                 <div
-                  onClick={() => setAppointmentType("presencial")}
+                  onClick={() => handleSelectModality("presencial")}
                   className={`p-6 rounded-2xl border-2 cursor-pointer transition-all duration-200 flex flex-col justify-between ${
                     appointmentType === "presencial"
                       ? "border-[#2e6f40] bg-[#f0f6f2] shadow-md"
@@ -252,7 +395,7 @@ export default function SchedulingSection() {
 
                 {/* Option Online */}
                 <div
-                  onClick={() => setAppointmentType("online")}
+                  onClick={() => handleSelectModality("online")}
                   className={`p-6 rounded-2xl border-2 cursor-pointer transition-all duration-200 flex flex-col justify-between ${
                     appointmentType === "online"
                       ? "border-[#2e6f40] bg-[#f0f6f2] shadow-md"
@@ -310,7 +453,7 @@ export default function SchedulingSection() {
             </div>
           )}
 
-          {/* STEP 3 & 4: Date & Time Selection */}
+          {/* STEP 2: Date & Time Selection */}
           {step === 2 && (
             <div className="space-y-8">
               <div className="flex items-center justify-between">
@@ -329,14 +472,14 @@ export default function SchedulingSection() {
                 </div>
                 <button
                   onClick={() => setStep(1)}
-                  className="text-xs font-semibold text-[#2e6f40] hover:underline"
+                  className="text-xs font-semibold text-[#2e6f40] hover:underline cursor-pointer"
                 >
                   Alterar modalidade
                 </button>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                {/* Calendar (Step 3) */}
+                {/* Calendar */}
                 <div className="lg:col-span-7 bg-[#f8faf8] p-5 sm:p-6 rounded-2xl border border-[#d1e3d5]">
                   {/* Month header */}
                   <div className="flex items-center justify-between mb-6">
@@ -347,14 +490,14 @@ export default function SchedulingSection() {
                       <button
                         onClick={handlePrevMonth}
                         aria-label="Mês anterior"
-                        className="p-2 text-[#5c6f64] hover:text-[#1d2a23] hover:bg-white rounded-lg transition-colors border border-[#d1e3d5]"
+                        className="p-2 text-[#5c6f64] hover:text-[#1d2a23] hover:bg-white rounded-lg transition-colors border border-[#d1e3d5] cursor-pointer"
                       >
                         &larr;
                       </button>
                       <button
                         onClick={handleNextMonth}
                         aria-label="Mês seguinte"
-                        className="p-2 text-[#5c6f64] hover:text-[#1d2a23] hover:bg-white rounded-lg transition-colors border border-[#d1e3d5]"
+                        className="p-2 text-[#5c6f64] hover:text-[#1d2a23] hover:bg-white rounded-lg transition-colors border border-[#d1e3d5] cursor-pointer"
                       >
                         &rarr;
                       </button>
@@ -388,16 +531,13 @@ export default function SchedulingSection() {
                         <button
                           key={date.toISOString()}
                           disabled={disabled}
-                          onClick={() => {
-                            setSelectedDate(date);
-                            setSelectedTime(null); // Reset time when date changes
-                          }}
+                          onClick={() => handleSelectDate(date)}
                           className={`h-10 text-xs font-semibold rounded-xl transition-all flex items-center justify-center ${
                             isSelected
                               ? "bg-[#2e6f40] text-white shadow-md scale-105"
                               : disabled
                               ? "bg-transparent text-zinc-300 cursor-not-allowed"
-                              : "bg-white text-[#1d2a23] border border-[#d1e3d5] hover:border-[#2e6f40] hover:text-[#2e6f40]"
+                              : "bg-white text-[#1d2a23] border border-[#d1e3d5] hover:border-[#2e6f40] hover:text-[#2e6f40] cursor-pointer"
                           }`}
                         >
                           {date.getDate()}
@@ -407,7 +547,7 @@ export default function SchedulingSection() {
                   </div>
                 </div>
 
-                {/* Time Slots (Step 4) */}
+                {/* Time Slots */}
                 <div className="lg:col-span-5 flex flex-col justify-between space-y-4">
                   <div>
                     <h4 className="text-sm font-bold text-[#1d2a23] mb-3">
@@ -427,24 +567,41 @@ export default function SchedulingSection() {
                           </span>
                         </p>
 
-                        <div className="grid grid-cols-3 gap-2 max-h-[300px] overflow-y-auto pr-1">
-                          {mockTimeSlots.map((time) => {
-                            const isTimeSelected = selectedTime === time;
-                            return (
-                              <button
-                                key={time}
-                                onClick={() => setSelectedTime(time)}
-                                className={`py-2.5 px-3 text-xs font-semibold rounded-xl border transition-all ${
-                                  isTimeSelected
-                                    ? "bg-[#2e6f40] text-white border-[#2e6f40] shadow-xs"
-                                    : "bg-white text-[#1d2a23] border-[#d1e3d5] hover:border-[#2e6f40] hover:text-[#2e6f40]"
-                                }`}
-                              >
-                                {time}
-                              </button>
-                            );
-                          })}
-                        </div>
+                        {isLoadingSlots ? (
+                          <div className="py-8 text-center text-xs text-[#5c6f64] flex flex-col items-center justify-center gap-2">
+                            <span className="inline-block w-5 h-5 border-2 border-[#2e6f40] border-t-transparent rounded-full animate-spin" />
+                            <span>A verificar horários disponíveis...</span>
+                          </div>
+                        ) : availableSlots.length > 0 ? (
+                          <div className="grid grid-cols-3 gap-2 max-h-[300px] overflow-y-auto pr-1">
+                            {availableSlots.map((time) => {
+                              const isTimeSelected = selectedTime === time;
+                              return (
+                                <button
+                                  key={time}
+                                  type="button"
+                                  onClick={() => setSelectedTime(time)}
+                                  className={`py-2.5 px-3 text-xs font-semibold rounded-xl border transition-all cursor-pointer ${
+                                    isTimeSelected
+                                      ? "bg-[#2e6f40] text-white border-[#2e6f40] shadow-xs"
+                                      : "bg-white text-[#1d2a23] border-[#d1e3d5] hover:border-[#2e6f40] hover:text-[#2e6f40]"
+                                  }`}
+                                >
+                                  {time}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="p-6 bg-[#f8faf8] rounded-2xl border border-[#d1e3d5] text-center text-xs text-[#5c6f64] space-y-1">
+                            <p className="font-semibold text-[#1d2a23]">
+                              {slotsError || "Sem horários disponíveis"}
+                            </p>
+                            <p className="text-[11px]">
+                              Por favor, selecione outro dia no calendário para verificar a disponibilidade.
+                            </p>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div className="p-6 bg-[#f8faf8] rounded-2xl border border-[#d1e3d5] text-center text-xs text-[#5c6f64]">
@@ -456,12 +613,14 @@ export default function SchedulingSection() {
                   {/* Step 2 Buttons */}
                   <div className="flex items-center justify-between pt-4 border-t border-[#f0f6f2]">
                     <button
+                      type="button"
                       onClick={() => setStep(1)}
-                      className="px-4 py-2.5 text-xs font-semibold text-[#5c6f64] hover:text-[#1d2a23]"
+                      className="px-4 py-2.5 text-xs font-semibold text-[#5c6f64] hover:text-[#1d2a23] cursor-pointer"
                     >
                       &larr; Voltar
                     </button>
                     <button
+                      type="button"
                       disabled={!selectedDate || !selectedTime}
                       onClick={() => setStep(3)}
                       className={`px-6 py-3 text-sm font-semibold rounded-xl transition-all shadow-xs ${
@@ -478,7 +637,7 @@ export default function SchedulingSection() {
             </div>
           )}
 
-          {/* STEP 5: Patient Information Form */}
+          {/* STEP 3: Patient Information Form */}
           {step === 3 && (
             <form onSubmit={handleFormSubmit} className="space-y-6">
               <div>
@@ -568,13 +727,13 @@ export default function SchedulingSection() {
                 <button
                   type="button"
                   onClick={() => setStep(2)}
-                  className="px-4 py-2.5 text-xs font-semibold text-[#5c6f64] hover:text-[#1d2a23]"
+                  className="px-4 py-2.5 text-xs font-semibold text-[#5c6f64] hover:text-[#1d2a23] cursor-pointer"
                 >
                   &larr; Voltar
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-[#2e6f40] hover:bg-[#245933] text-white text-sm font-semibold rounded-xl shadow-xs transition-all"
+                  className="px-6 py-3 bg-[#2e6f40] hover:bg-[#245933] text-white text-sm font-semibold rounded-xl shadow-xs transition-all cursor-pointer"
                 >
                   Revisar Marcação &rarr;
                 </button>
@@ -582,7 +741,7 @@ export default function SchedulingSection() {
             </form>
           )}
 
-          {/* STEP 6: Appointment Summary */}
+          {/* STEP 4: Appointment Summary */}
           {step === 4 && (
             <div className="space-y-6">
               <div>
@@ -659,27 +818,66 @@ export default function SchedulingSection() {
                 )}
               </div>
 
+              {/* Error message banner if booking submission fails */}
+              {submitError && (
+                <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 flex items-start gap-2.5">
+                  <span className="text-base leading-none">⚠️</span>
+                  <div className="flex-1 space-y-1">
+                    <p className="font-semibold">{submitError}</p>
+                    {(submitError.toLowerCase().includes("reservado") ||
+                      submitError.toLowerCase().includes("disponível") ||
+                      submitError.toLowerCase().includes("passou")) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSubmitError(null);
+                          setSelectedTime(null);
+                          setStep(2);
+                        }}
+                        className="inline-flex items-center font-bold text-[#2e6f40] hover:underline cursor-pointer"
+                      >
+                        &larr; Voltar à seleção de data e horário
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Step 4 Buttons */}
               <div className="flex items-center justify-between pt-6 border-t border-[#f0f6f2]">
                 <button
                   type="button"
-                  onClick={() => setStep(3)}
-                  className="px-4 py-2.5 text-xs font-semibold text-[#5c6f64] hover:text-[#1d2a23]"
+                  disabled={isSubmitting}
+                  onClick={() => {
+                    setSubmitError(null);
+                    setStep(3);
+                  }}
+                  className="px-4 py-2.5 text-xs font-semibold text-[#5c6f64] hover:text-[#1d2a23] cursor-pointer"
                 >
                   &larr; Alterar Informações
                 </button>
                 <button
                   type="button"
+                  disabled={isSubmitting}
                   onClick={handleConfirmBooking}
-                  className="px-6 py-3 bg-[#2e6f40] hover:bg-[#245933] text-white text-sm font-semibold rounded-xl shadow-md transition-all"
+                  className={`px-6 py-3 bg-[#2e6f40] hover:bg-[#245933] text-white text-sm font-semibold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 ${
+                    isSubmitting ? "opacity-75 cursor-not-allowed" : "cursor-pointer"
+                  }`}
                 >
-                  Confirmar marcação
+                  {isSubmitting ? (
+                    <>
+                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>A registar marcação...</span>
+                    </>
+                  ) : (
+                    <span>Confirmar marcação</span>
+                  )}
                 </button>
               </div>
             </div>
           )}
 
-          {/* STEP 7: Confirmation / Success State */}
+          {/* STEP 5: Confirmation / Success State */}
           {step === 5 && (
             <div className="py-8 text-center space-y-6">
               <div className="w-16 h-16 rounded-full bg-[#f0f6f2] text-[#2e6f40] border-2 border-[#2e6f40] flex items-center justify-center mx-auto text-2xl animate-bounce">
@@ -727,7 +925,7 @@ export default function SchedulingSection() {
               <div className="pt-4">
                 <button
                   onClick={resetFlow}
-                  className="px-6 py-3 bg-[#1d2a23] hover:bg-[#2e6f40] text-white text-xs font-semibold rounded-xl transition-colors shadow-xs"
+                  className="px-6 py-3 bg-[#1d2a23] hover:bg-[#2e6f40] text-white text-xs font-semibold rounded-xl transition-colors shadow-xs cursor-pointer"
                 >
                   Voltar ao início
                 </button>
