@@ -4,8 +4,13 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
-import { FULL_HOUR_SLOTS, type FullHourTimeSlot } from "@/lib/supabase/types";
+import {
+  FULL_HOUR_SLOTS,
+  type FullHourTimeSlot,
+  type AvailabilitySchedule,
+} from "@/lib/supabase/types";
 import AdminHeader from "@/components/admin/AdminHeader";
+import AppointmentsManager from "@/components/admin/AppointmentsManager";
 import WeeklyScheduleManager, {
   WEEKDAYS,
   type DayScheduleState,
@@ -21,6 +26,11 @@ export default function AdminDashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  // Tab State: "marcacoes" (Appointments) vs "disponibilidade" (Schedules)
+  const [activeTab, setActiveTab] = useState<"marcacoes" | "disponibilidade">(
+    "marcacoes"
+  );
 
   // Availability State
   const [weeklySchedule, setWeeklySchedule] = useState<
@@ -44,7 +54,7 @@ export default function AdminDashboardPage() {
 
   const [dateOverrides, setDateOverrides] = useState<DateOverrideItem[]>([]);
 
-  // Feedback notifications
+  // Feedback notifications for schedule save
   const [saveStatus, setSaveStatus] = useState<{
     type: "success" | "error" | null;
     message: string | null;
@@ -56,7 +66,8 @@ export default function AdminDashboardPage() {
   const loadAvailability = useCallback(async () => {
     try {
       const supabase = createClient();
-      const { data, error } = await (supabase.from("availability_schedules") as any)
+      const { data, error } = await supabase
+        .from("availability_schedules")
         .select("*");
 
       if (error) {
@@ -74,7 +85,7 @@ export default function AdminDashboardPage() {
         return;
       }
 
-      const rows = data as unknown as import("@/lib/supabase/types").AvailabilitySchedule[] | null;
+      const rows = data as AvailabilitySchedule[] | null;
 
       if (rows && rows.length > 0) {
         // Reset base weekly state template
@@ -293,7 +304,8 @@ export default function AdminDashboardPage() {
       });
 
       // 3. Clear old records and insert new ones
-      const { error: deleteError } = await (supabase.from("availability_schedules") as any)
+      const { error: deleteError } = await supabase
+        .from("availability_schedules")
         .delete()
         .neq("id", "00000000-0000-0000-0000-000000000000");
 
@@ -313,7 +325,8 @@ export default function AdminDashboardPage() {
       }
 
       if (rowsToInsert.length > 0) {
-        const { error: insertError } = await (supabase.from("availability_schedules") as any)
+        const { error: insertError } = await supabase
+          .from("availability_schedules")
           .insert(rowsToInsert);
 
         if (insertError) {
@@ -353,7 +366,7 @@ export default function AdminDashboardPage() {
         <div className="text-center space-y-3">
           <div className="w-8 h-8 border-4 border-[#2e6f40] border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-xs font-semibold text-[#5c6f64]">
-            A carregar disponibilidade...
+            A carregar painel administrativo...
           </p>
         </div>
       </div>
@@ -371,88 +384,125 @@ export default function AdminDashboardPage() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8">
-        {/* Title Bar & Main Save Action */}
-        <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#d1e3d5] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-          <div>
-            <span className="inline-block text-xs font-semibold uppercase tracking-wider text-[#2e6f40] bg-[#f0f6f2] px-3.5 py-1 rounded-full border border-[#d1e3d5] mb-2">
-              Gestão de Consultas
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-bold text-[#1d2a23]">
-              Gestão de Disponibilidade
-            </h2>
-            <p className="text-xs sm:text-sm text-[#5c6f64] mt-1">
-              Configure a sua agenda semanal e gerie exceções ou bloqueios para a consulta presencial em Ovar e online.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3 shrink-0">
-            <button
-              onClick={handleSaveSchedule}
-              disabled={isSaving}
-              className="w-full sm:w-auto px-6 py-3.5 bg-[#2e6f40] hover:bg-[#245933] active:bg-[#1d4628] text-white text-sm font-semibold rounded-xl shadow-md transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {isSaving ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>A guardar...</span>
-                </>
-              ) : (
-                <span>Guardar alterações</span>
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Feedback Notifications */}
-        {saveStatus.type && (
-          <div
-            className={`p-4 rounded-2xl border text-xs sm:text-sm font-semibold flex items-center gap-3 shadow-2xs ${
-              saveStatus.type === "success"
-                ? "bg-[#f0f6f2] border-[#2e6f40] text-[#2e6f40]"
-                : "bg-red-50 border-red-200 text-red-700"
+        {/* Navigation Tabs */}
+        <div className="flex items-center gap-2 border-b border-[#d1e3d5] pb-4">
+          <button
+            type="button"
+            onClick={() => setActiveTab("marcacoes")}
+            className={`px-5 py-2.5 text-xs sm:text-sm font-bold rounded-2xl transition-all cursor-pointer flex items-center gap-2 ${
+              activeTab === "marcacoes"
+                ? "bg-[#2e6f40] text-white shadow-xs"
+                : "bg-white text-[#5c6f64] hover:text-[#1d2a23] hover:bg-[#f0f6f2] border border-[#d1e3d5]"
             }`}
           >
-            <span className="text-base">
-              {saveStatus.type === "success" ? "✓" : "⚠️"}
-            </span>
-            <span>{saveStatus.message}</span>
-          </div>
-        )}
-
-        {/* Main Content Layout Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Weekly Schedule Manager Column */}
-          <div className="lg:col-span-7">
-            <WeeklyScheduleManager
-              schedule={weeklySchedule}
-              onUpdateDay={handleUpdateDay}
-            />
-          </div>
-
-          {/* Date Overrides & Exceptions Column */}
-          <div className="lg:col-span-5">
-            <DateOverridesManager
-              overrides={dateOverrides}
-              onAddOverride={handleAddOverride}
-              onRemoveOverride={handleRemoveOverride}
-            />
-          </div>
-        </div>
-
-        {/* Bottom Save Action Floating / Footer Bar */}
-        <div className="pt-6 border-t border-[#d1e3d5]/60 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-[#5c6f64]">
-            As alterações guardadas serão aplicadas imediatamente à base de dados de disponibilidade em Supabase.
-          </p>
+            <span>📅</span>
+            <span>Marcações de Consultas</span>
+          </button>
 
           <button
-            onClick={handleSaveSchedule}
-            disabled={isSaving}
-            className="w-full sm:w-auto px-6 py-3 bg-[#2e6f40] hover:bg-[#245933] text-white text-xs font-semibold rounded-xl shadow-xs transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            type="button"
+            onClick={() => setActiveTab("disponibilidade")}
+            className={`px-5 py-2.5 text-xs sm:text-sm font-bold rounded-2xl transition-all cursor-pointer flex items-center gap-2 ${
+              activeTab === "disponibilidade"
+                ? "bg-[#2e6f40] text-white shadow-xs"
+                : "bg-white text-[#5c6f64] hover:text-[#1d2a23] hover:bg-[#f0f6f2] border border-[#d1e3d5]"
+            }`}
           >
-            {isSaving ? "A guardar..." : "Guardar alterações"}
+            <span>⚙️</span>
+            <span>Gestão de Disponibilidade</span>
           </button>
         </div>
+
+        {/* TAB 1: Appointments Management */}
+        {activeTab === "marcacoes" && <AppointmentsManager />}
+
+        {/* TAB 2: Availability Schedules Management */}
+        {activeTab === "disponibilidade" && (
+          <div className="space-y-8">
+            {/* Title Bar & Main Save Action */}
+            <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#d1e3d5] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+              <div>
+                <span className="inline-block text-xs font-semibold uppercase tracking-wider text-[#2e6f40] bg-[#f0f6f2] px-3.5 py-1 rounded-full border border-[#d1e3d5] mb-2">
+                  Gestão de Consultas
+                </span>
+                <h2 className="text-2xl sm:text-3xl font-bold text-[#1d2a23]">
+                  Gestão de Disponibilidade
+                </h2>
+                <p className="text-xs sm:text-sm text-[#5c6f64] mt-1">
+                  Configure a sua agenda semanal e gerie exceções ou bloqueios para a consulta presencial em Ovar e online.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 shrink-0">
+                <button
+                  onClick={handleSaveSchedule}
+                  disabled={isSaving}
+                  className="w-full sm:w-auto px-6 py-3.5 bg-[#2e6f40] hover:bg-[#245933] active:bg-[#1d4628] text-white text-sm font-semibold rounded-xl shadow-md transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  {isSaving ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>A guardar...</span>
+                    </>
+                  ) : (
+                    <span>Guardar alterações</span>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Feedback Notifications */}
+            {saveStatus.type && (
+              <div
+                className={`p-4 rounded-2xl border text-xs sm:text-sm font-semibold flex items-center gap-3 shadow-2xs ${
+                  saveStatus.type === "success"
+                    ? "bg-[#f0f6f2] border-[#2e6f40] text-[#2e6f40]"
+                    : "bg-red-50 border-red-200 text-red-700"
+                }`}
+              >
+                <span className="text-base">
+                  {saveStatus.type === "success" ? "✓" : "⚠️"}
+                </span>
+                <span>{saveStatus.message}</span>
+              </div>
+            )}
+
+            {/* Main Content Layout Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              {/* Weekly Schedule Manager Column */}
+              <div className="lg:col-span-7">
+                <WeeklyScheduleManager
+                  schedule={weeklySchedule}
+                  onUpdateDay={handleUpdateDay}
+                />
+              </div>
+
+              {/* Date Overrides & Exceptions Column */}
+              <div className="lg:col-span-5">
+                <DateOverridesManager
+                  overrides={dateOverrides}
+                  onAddOverride={handleAddOverride}
+                  onRemoveOverride={handleRemoveOverride}
+                />
+              </div>
+            </div>
+
+            {/* Bottom Save Action Floating / Footer Bar */}
+            <div className="pt-6 border-t border-[#d1e3d5]/60 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <p className="text-xs text-[#5c6f64]">
+                As alterações guardadas serão aplicadas imediatamente à base de dados de disponibilidade em Supabase.
+              </p>
+
+              <button
+                onClick={handleSaveSchedule}
+                disabled={isSaving}
+                className="w-full sm:w-auto px-6 py-3 bg-[#2e6f40] hover:bg-[#245933] text-white text-xs font-semibold rounded-xl shadow-xs transition-colors disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+              >
+                {isSaving ? "A guardar..." : "Guardar alterações"}
+              </button>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
