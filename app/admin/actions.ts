@@ -5,6 +5,11 @@ import {
   createServerSupabaseAdminClient,
 } from "@/lib/supabase/server";
 import type { Appointment, AppointmentStatus } from "@/lib/supabase/types";
+import {
+  dispatchAppointmentConfirmedNotification,
+  dispatchAppointmentCancelledNotification,
+} from "@/lib/notifications/service";
+import type { AppointmentNotificationPayload } from "@/lib/notifications/types";
 
 /**
  * Helper to securely verify caller authentication and admin authorization.
@@ -209,7 +214,9 @@ export async function updateAppointmentStatus(
     // Fetch existing appointment to verify existence and slot details
     const { data: existing, error: fetchErr } = await adminDb
       .from("appointments")
-      .select("id, appointment_date, time_slot, status")
+      .select(
+        "id, appointment_type, appointment_date, time_slot, patient_name, patient_email, patient_phone, patient_notes, status"
+      )
       .eq("id", appointmentId)
       .maybeSingle();
 
@@ -285,6 +292,32 @@ export async function updateAppointmentStatus(
         error:
           "Não foi possível atualizar o estado da marcação. Por favor, tente novamente.",
       };
+    }
+
+    // Dispatch notifications for status transitions (non-blocking for update outcome)
+    try {
+      const updatedPayload: AppointmentNotificationPayload = {
+        id: existing.id,
+        appointment_type: existing.appointment_type,
+        appointment_date: existing.appointment_date,
+        time_slot: existing.time_slot,
+        patient_name: existing.patient_name,
+        patient_email: existing.patient_email,
+        patient_phone: existing.patient_phone,
+        patient_notes: existing.patient_notes,
+        status: newStatus,
+      };
+
+      if (newStatus === "confirmed" && existing.status !== "confirmed") {
+        await dispatchAppointmentConfirmedNotification(updatedPayload);
+      } else if (newStatus === "cancelled" && existing.status !== "cancelled") {
+        await dispatchAppointmentCancelledNotification(updatedPayload);
+      }
+    } catch (notifErr) {
+      console.warn(
+        "Aviso seguro: Falha ao despachar notificação de alteração de estado:",
+        notifErr
+      );
     }
 
     return { success: true };

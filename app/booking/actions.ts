@@ -6,6 +6,7 @@ import {
   FULL_HOUR_SLOTS,
 } from "@/lib/supabase/types";
 import { createServerSupabaseAdminClient } from "@/lib/supabase/server";
+import { dispatchAppointmentCreatedNotifications } from "@/lib/notifications/service";
 
 export interface CreateAppointmentInput {
   appointment_type: AppointmentType | string;
@@ -416,6 +417,23 @@ export async function bookAppointment(
         error:
           "Não foi possível registar o seu pedido de marcação. Por favor, tente novamente mais tarde.",
       };
+    }
+
+    // Dispatch appointment creation notifications (non-blocking for booking outcome)
+    try {
+      await dispatchAppointmentCreatedNotifications({
+        id: newAppointment.id,
+        appointment_type: sanitizedType,
+        appointment_date: sanitizedDate,
+        time_slot: sanitizedTimeSlot,
+        patient_name: sanitizedName,
+        patient_email: sanitizedEmail,
+        patient_phone: sanitizedPhone,
+        patient_notes: sanitizedNotes,
+        status: "pending",
+      });
+    } catch (notifErr) {
+      console.warn("Aviso seguro: Falha no envio de notificações de criação:", notifErr);
     }
 
     return {
