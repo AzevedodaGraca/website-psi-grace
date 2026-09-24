@@ -28,27 +28,43 @@ export async function dispatchAppointmentCreatedNotifications(
   payload: AppointmentNotificationPayload
 ): Promise<NotificationDispatchResult[]> {
   const results: NotificationDispatchResult[] = [];
-  const adminEmail =
+  const adminEmail = (
     process.env.ADMIN_NOTIFICATION_EMAIL ||
     process.env.ADMIN_EMAIL ||
-    "admin@grcpsi.pt";
+    ""
+  ).trim();
 
-  try {
-    // 1. Admin Notification
-    const adminMessage = buildAdminNewBookingNotification(payload, adminEmail);
-    const adminResult = await emailProvider.sendEmail(adminMessage);
-    results.push(adminResult);
-  } catch (err) {
-    console.error("[Notificações] Falha ao preparar notificação do administrador:", err);
+  if (!adminEmail) {
+    console.info(
+      `[Notificações] E-mail do administrador não configurado (ADMIN_EMAIL/ADMIN_NOTIFICATION_EMAIL). Notificação do administrador adiada com segurança (${payload.id}).`
+    );
     results.push({
       channel: "email",
       recipient: "admin",
       event: "appointment_created_admin",
       delivered: false,
-      status: "failed",
-      error: "Erro inesperado ao despachar notificação ao administrador.",
+      status: "prepared",
+      reason: "admin_email_not_configured",
       timestamp: new Date().toISOString(),
     });
+  } else {
+    try {
+      // 1. Admin Notification
+      const adminMessage = buildAdminNewBookingNotification(payload, adminEmail);
+      const adminResult = await emailProvider.sendEmail(adminMessage);
+      results.push(adminResult);
+    } catch (err) {
+      console.error("[Notificações] Falha ao preparar notificação do administrador:", err);
+      results.push({
+        channel: "email",
+        recipient: "admin",
+        event: "appointment_created_admin",
+        delivered: false,
+        status: "failed",
+        error: "Erro inesperado ao despachar notificação ao administrador.",
+        timestamp: new Date().toISOString(),
+      });
+    }
   }
 
   try {

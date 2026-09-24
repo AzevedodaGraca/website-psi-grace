@@ -59,5 +59,6 @@ export interface NotificationDispatchResult {
   status: "delivered" | "prepared" | "failed";
   reason?: string;
   error?: string;
+  providerMessageId?: string;
   timestamp: string;
 }
