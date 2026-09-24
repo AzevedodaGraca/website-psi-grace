@@ -42,7 +42,7 @@ export function formatModalityPt(type: "presencial" | "online"): {
   }
   return {
     title: "Consulta Online",
-    location: "Videochamada direta no WhatsApp",
+    location: "Videochamada (plataforma a combinar previamente com o utente)",
   };
 }
 
@@ -235,7 +235,7 @@ Detalhes da Consulta:
 ${
   payload.appointment_type === "presencial"
     ? "O gabinete situa-se na Rua de Timor, 67 – 1.º H, em Ovar. Agradecemos a chegada com 5 minutos de antecedência."
-    : "A consulta online será realizada por videochamada direta através do WhatsApp. No horário agendado, entraremos em contacto consigo."
+    : "Consulta online — a plataforma de videochamada será combinada previamente com o utente."
 }
 
 Caso necessite de alterar ou remarcar a sua consulta, solicitamos que nos contacte com a maior antecedência possível.
@@ -270,7 +270,7 @@ Ovar, Portugal`;
         ${
           payload.appointment_type === "presencial"
             ? "📍 <strong>Instruções:</strong> O gabinete localiza-se na <em>Rua de Timor, 67 – 1.º H, Ovar</em>. Agradecemos a chegada com cerca de 5 minutos de antecedência."
-            : "📱 <strong>Instruções:</strong> A consulta será efetuada por videochamada no WhatsApp. No horário estipulado, entraremos em contacto direto para o seu telemóvel."
+            : "💻 <strong>Instruções:</strong> Consulta online — a plataforma de videochamada será combinada previamente com o utente."
         }
       </div>
 

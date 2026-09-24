@@ -383,7 +383,7 @@ export default function AppointmentsManager({
             >
               <option value="todas">Todas as modalidades</option>
               <option value="presencial">Presencial (Ovar)</option>
-              <option value="online">Online (WhatsApp)</option>
+              <option value="online">Consulta Online</option>
             </select>
           </div>
 
@@ -537,8 +537,8 @@ export default function AppointmentsManager({
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1.5 font-medium text-[#2e6f40]">
-                              <span>📱</span>
-                              <span>WhatsApp</span>
+                              <span>💻</span>
+                              <span>Online</span>
                             </span>
                           )}
                         </td>
@@ -625,7 +625,7 @@ export default function AppointmentsManager({
                           </span>
                         </div>
                         <span className="text-xs font-semibold text-[#1d2a23] mt-0.5 block">
-                          {apt.appointment_type === "presencial" ? "🏢 Presencial (Ovar)" : "📱 Online (WhatsApp)"}
+                          {apt.appointment_type === "presencial" ? "🏢 Presencial (Ovar)" : "💻 Consulta Online"}
                         </span>
                       </div>
                       <div>{renderStatusBadge(apt.status)}</div>
@@ -754,7 +754,7 @@ export default function AppointmentsManager({
                   <span className="font-bold text-[#1d2a23]">
                     {selectedAppointment.appointment_type === "presencial"
                       ? "Consulta Presencial (Gabinete em Ovar: Rua de Timor, 67 – 1.º H)"
-                      : "Consulta Online (Videochamada via WhatsApp)"}
+                      : "Consulta Online"}
                   </span>
                 </div>
               </div>

@@ -29,10 +29,6 @@ export default function HeroSection() {
               Cuidado psicológico com{" "}
               <span className="text-[#2e6f40] underline decoration-[#d1e3d5] underline-offset-4">
                 empatia
-              </span>
-              ,{" "}
-              <span className="text-[#2e6f40] underline decoration-[#d1e3d5] underline-offset-4">
-                rigor
               </span>{" "}
               e{" "}
               <span className="text-[#2e6f40] underline decoration-[#d1e3d5] underline-offset-4">
@@ -41,7 +37,7 @@ export default function HeroSection() {
             </h1>
 
             <p className="mt-6 text-base sm:text-lg text-[#5c6f64] leading-relaxed max-w-2xl">
-              Acompanhamento psicológico presencial no gabinete em Ovar e online via WhatsApp, promovendo a saúde psíquica e o bem-estar emocional para toda a gente — crianças, jovens, adultos, casais e famílias.
+              Acompanhamento psicológico presencial e online, promovendo a saúde psíquica e o bem-estar emocional para toda a gente — crianças, jovens, adultos, casais e famílias.
             </p>
 
             {/* Quick Benefits Tags */}
@@ -53,7 +49,7 @@ export default function HeroSection() {
                 📍 Gabinete em Ovar
               </span>
               <span className="inline-flex items-center px-3 py-1 bg-white border border-[#d1e3d5] rounded-lg shadow-2xs">
-                💬 Consultas Online via WhatsApp
+                💬 Consultas Online
               </span>
             </div>
 

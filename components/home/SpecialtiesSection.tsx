@@ -59,7 +59,7 @@ const specialties = [
     id: "terapia-casal-familia",
     title: "Terapia de Casal e Família",
     description:
-      "Intervenção especializada de cariz sistémico focada nas dinâmicas de casal e nas relações familiares para superar crises e ruídos de comunicação.",
+      "Intervenção especializada na abordagem sistêmica focada nas dinâmicas de casal e nas relações familiares para superar crises e ruídos de comunicação.",
     icon: "🏡",
   },
 ];

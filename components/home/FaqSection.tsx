@@ -22,7 +22,7 @@ const faqData: FaqItem[] = [
   {
     question: "Como funcionam as consultas online?",
     answer:
-      "As consultas online realizam-se à distância através de videochamada no WhatsApp (+351 926 362 033). Garantem a mesma privacidade e acompanhamento técnico de uma consulta presencial, proporcionando conveniência e flexibilidade.",
+      "As consultas online realizam-se à distância através de videochamada, sendo a plataforma acordada previamente com o utente (como WhatsApp, Zoom ou outra). Garantem a mesma privacidade e acompanhamento técnico de uma consulta presencial, proporcionando conveniência e flexibilidade.",
   },
   {
     question: "Quais são os públicos e faixas etárias atendidas?",

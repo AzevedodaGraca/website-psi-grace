@@ -13,7 +13,7 @@ export default function ServicesSection() {
             Tipos de Atendimento
           </h2>
           <p className="mt-4 text-base text-[#5c6f64]">
-            Consultas presenciais no gabinete em Ovar e consultas online através do WhatsApp, preparadas para responder às necessidades específicas de toda a gente, em cada fase da vida.
+            Consultas presenciais no gabinete em Ovar e consultas online, preparadas para responder às necessidades específicas de toda a gente, em cada fase da vida.
           </p>
         </div>
 
@@ -66,14 +66,14 @@ export default function ServicesSection() {
                 Atendimento Online
               </div>
               <h3 className="text-xl font-bold text-[#1d2a23] mb-3">
-                Consultas via WhatsApp
+                Consulta Online
               </h3>
               <p className="text-sm text-[#5c6f64] leading-relaxed">
-                Acompanhamento psicológico à distância realizado por videochamada no WhatsApp, garantindo flexibilidade, conforto e acessibilidade sem necessidade de deslocação.
+                Acompanhamento psicológico à distância realizado por videochamada, garantindo flexibilidade, conforto e acessibilidade sem necessidade de deslocação.
               </p>
             </div>
             <div className="mt-6 pt-4 border-t border-[#d1e3d5] text-xs text-[#1d2a23] font-medium">
-              📱 Videochamada direta via WhatsApp (+351 926 362 033)
+              💻 Videochamada — plataforma a combinar previamente com o utente
             </div>
           </div>
         </div>

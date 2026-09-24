@@ -128,7 +128,7 @@ export default function Footer() {
 
               <div>
                 <p className="font-medium text-white mb-1">Modalidades:</p>
-                <p>Presencial (Ovar) & Online (WhatsApp)</p>
+                <p>Presencial (Ovar) & Online</p>
                 <p className="text-xs text-emerald-300 font-semibold mt-1">
                   • Primeira entrevista gratuita
                 </p>

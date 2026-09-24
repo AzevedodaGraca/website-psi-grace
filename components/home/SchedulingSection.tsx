@@ -30,6 +30,10 @@ function formatDateToIso(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+const WHATSAPP_OBSERVATION_URL = `https://wa.me/351926362033?text=${encodeURIComponent(
+  "Olá! O meu melhor horário para a consulta está indisponível. Gostaria de saber se existe possibilidade de encontrar outro horário. Obrigado(a)!"
+)}`;
+
 export default function SchedulingSection() {
   // Stepper state: 1 (Type), 2 (Date & Time), 3 (Patient Info), 4 (Summary), 5 (Confirmed)
   const [step, setStep] = useState<number>(1);
@@ -404,7 +408,7 @@ export default function SchedulingSection() {
                 >
                   <div>
                     <div className="flex items-center justify-between mb-4">
-                      <span className="text-2xl">📱</span>
+                      <span className="text-2xl">💻</span>
                       <div
                         className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
                           appointmentType === "online"
@@ -421,8 +425,8 @@ export default function SchedulingSection() {
                     <h4 className="text-lg font-bold text-[#1d2a23]">
                       Consulta Online
                     </h4>
-                    <span className="inline-block text-xs font-semibold text-[#25D366] mt-1">
-                      Via WhatsApp
+                    <span className="inline-block text-xs font-semibold text-[#2e6f40] mt-1">
+                      Videochamada
                     </span>
 
                     <p className="text-xs sm:text-sm text-[#5c6f64] mt-3 leading-relaxed">
@@ -431,9 +435,23 @@ export default function SchedulingSection() {
                   </div>
 
                   <div className="mt-6 pt-4 border-t border-[#d1e3d5]/60 text-xs font-medium text-[#1d2a23]">
-                    💬 Videochamada direta no WhatsApp
+                    💻 Plataforma a combinar previamente com o utente
                   </div>
                 </div>
+              </div>
+
+              {/* Observation Notice */}
+              <div className="p-4 rounded-xl bg-[#f8faf8] border border-[#d1e3d5] text-xs sm:text-sm text-[#5c6f64] leading-relaxed">
+                <span className="font-semibold text-[#1d2a23]">Observação:</span> Podem ocorrer cancelamentos e trocas de horários entre os utentes. Caso o seu melhor horário esteja indisponível, entre em contacto via{" "}
+                <a
+                  href={WHATSAPP_OBSERVATION_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-[#2e6f40] hover:text-[#245933] underline underline-offset-2 decoration-[#2e6f40]/40 hover:decoration-[#2e6f40] transition-colors"
+                >
+                  WhatsApp
+                </a>
+                .
               </div>
 
               {/* Step 1 Action Button */}
@@ -466,7 +484,7 @@ export default function SchedulingSection() {
                     <span className="font-semibold text-[#2e6f40]">
                       {appointmentType === "presencial"
                         ? "Consulta Presencial (Gabinete em Ovar)"
-                        : "Consulta Online (Via WhatsApp)"}
+                        : "Consulta Online"}
                     </span>
                   </p>
                 </div>
@@ -763,7 +781,7 @@ export default function SchedulingSection() {
                     <span className="text-sm font-bold text-[#1d2a23]">
                       {appointmentType === "presencial"
                         ? "Consulta Presencial (Gabinete em Ovar)"
-                        : "Consulta Online (Via WhatsApp)"}
+                        : "Consulta Online"}
                     </span>
                   </div>
 
@@ -898,7 +916,7 @@ export default function SchedulingSection() {
                 <div className="flex justify-between border-b border-[#d1e3d5] pb-2">
                   <span className="font-semibold text-[#5c6f64]">Modalidade:</span>
                   <span className="font-bold text-[#1d2a23]">
-                    {appointmentType === "presencial" ? "Presencial (Ovar)" : "Online (WhatsApp)"}
+                    {appointmentType === "presencial" ? "Presencial (Ovar)" : "Online"}
                   </span>
                 </div>
                 <div className="flex justify-between border-b border-[#d1e3d5] pb-2">
