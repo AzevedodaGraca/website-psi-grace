@@ -14,7 +14,7 @@ export default function TreeLogo({
 }: TreeLogoProps) {
   return (
     <Link
-      href="#inicio"
+      href="/#inicio"
       className={`inline-flex items-center gap-3 group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2e6f40] rounded-lg ${className}`}
     >
       <div className="relative flex items-center justify-center shrink-0">

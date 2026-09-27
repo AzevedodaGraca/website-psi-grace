@@ -44,6 +44,9 @@ export type Appointment = {
   status: AppointmentStatus;
   created_at: string;
   updated_at: string;
+  consent_given?: boolean | null;
+  consent_timestamp?: string | null;
+  consent_version?: string | null;
 };
 
 export type AvailabilitySchedule = {

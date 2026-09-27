@@ -148,7 +148,15 @@ export default function Footer() {
         {/* Bottom bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-emerald-200/60">
           <p>© {new Date().getFullYear()} Grace Azevedo da Graça. Todos os direitos reservados.</p>
-          <p>Psicóloga Clínica • Ordem dos Psicólogos Portugueses: OPP 25999</p>
+          <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+            <Link
+              href="/privacidade"
+              className="text-emerald-100/90 hover:text-white transition-colors underline underline-offset-4"
+            >
+              Política de Privacidade
+            </Link>
+            <p>Psicóloga Clínica • Ordem dos Psicólogos Portugueses: OPP 25999</p>
+          </div>
         </div>
       </div>
     </footer>

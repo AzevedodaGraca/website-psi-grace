@@ -16,6 +16,7 @@ export interface CreateAppointmentInput {
   patient_email: string;
   patient_phone: string;
   patient_notes?: string | null;
+  consent_given?: boolean;
 }
 
 export interface BookingActionResult {
@@ -238,6 +239,15 @@ export async function bookAppointment(
       sanitizedNotes = trimmedNotes.length > 0 ? trimmedNotes : null;
     }
 
+    // 9. Validate RGPD Consent (strictly mandatory for all new appointment submissions)
+    if (input.consent_given !== true) {
+      return {
+        success: false,
+        error:
+          "É necessário aceitar a Política de Privacidade e autorizar o tratamento dos seus dados para registar o pedido de marcação.",
+      };
+    }
+
     // 9. Prevent booking dates or times in the past (Europe/Lisbon timezone)
     const nowInLisbon = await getNowInLisbon();
     if (sanitizedDate < nowInLisbon.dateStr) {
@@ -376,7 +386,8 @@ export async function bookAppointment(
       };
     }
 
-    // 12. Insert appointment with status: 'pending'
+    // 12. Insert appointment with status: 'pending' and explicit GDPR consent audit trail
+    const consentTimestamp = new Date().toISOString();
     const { data: newAppointment, error: insertError } = await supabaseAdmin
       .from("appointments")
       .insert({
@@ -388,6 +399,9 @@ export async function bookAppointment(
         patient_phone: sanitizedPhone,
         patient_notes: sanitizedNotes,
         status: "pending",
+        consent_given: true,
+        consent_timestamp: consentTimestamp,
+        consent_version: "v1.0",
       })
       .select("id")
       .single();

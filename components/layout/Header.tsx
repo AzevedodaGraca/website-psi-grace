@@ -6,15 +6,15 @@ import TreeLogo from "../shared/TreeLogo";
 import MobileNav from "./MobileNav";
 
 const navLinks = [
-  { name: "Início", href: "#inicio" },
-  { name: "Sobre", href: "#sobre" },
-  { name: "Abordagem", href: "#abordagem" },
-  { name: "Serviços", href: "#servicos" },
-  { name: "Especialidades", href: "#especialidades" },
-  { name: "Gabinete", href: "#gabinete" },
-  { name: "Marcações", href: "#marcacao" },
-  { name: "FAQ", href: "#faq" },
-  { name: "Contacto", href: "#contacto" },
+  { name: "Início", href: "/#inicio" },
+  { name: "Sobre", href: "/#sobre" },
+  { name: "Abordagem", href: "/#abordagem" },
+  { name: "Serviços", href: "/#servicos" },
+  { name: "Especialidades", href: "/#especialidades" },
+  { name: "Gabinete", href: "/#gabinete" },
+  { name: "Marcações", href: "/#marcacao" },
+  { name: "FAQ", href: "/#faq" },
+  { name: "Contacto", href: "/#contacto" },
 ];
 
 export default function Header() {

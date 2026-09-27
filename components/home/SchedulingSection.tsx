@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import Link from "next/link";
 import {
   bookAppointment,
   getAvailableSlots,
@@ -21,6 +22,7 @@ interface FormErrors {
   name?: string;
   email?: string;
   phone?: string;
+  consent?: string;
 }
 
 function formatDateToIso(date: Date): string {
@@ -58,6 +60,7 @@ export default function SchedulingSection() {
     notes: "",
   });
 
+  const [consentGiven, setConsentGiven] = useState<boolean>(false);
   const [errors, setErrors] = useState<FormErrors>({});
 
   // Submission states
@@ -236,6 +239,9 @@ export default function SchedulingSection() {
     if (!form.phone.trim()) {
       newErrors.phone = "Por favor, introduza o seu número de telemóvel / WhatsApp.";
     }
+    if (!consentGiven) {
+      newErrors.consent = "É necessário aceitar a Política de Privacidade para prosseguir com a marcação.";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -258,6 +264,10 @@ export default function SchedulingSection() {
       setSubmitError("Por favor, preencha os seus dados de contacto.");
       return;
     }
+    if (!consentGiven) {
+      setSubmitError("É necessário aceitar a Política de Privacidade para registar o seu pedido de marcação.");
+      return;
+    }
 
     setIsSubmitting(true);
     setSubmitError(null);
@@ -271,6 +281,7 @@ export default function SchedulingSection() {
         patient_email: form.email,
         patient_phone: form.phone,
         patient_notes: form.notes || undefined,
+        consent_given: consentGiven,
       });
 
       if (result.success) {
@@ -297,6 +308,7 @@ export default function SchedulingSection() {
     setSelectedDate(null);
     setSelectedTime(null);
     setForm({ name: "", email: "", phone: "", notes: "" });
+    setConsentGiven(false);
     setErrors({});
     setSubmitError(null);
     setAvailableSlots([]);
@@ -737,6 +749,44 @@ export default function SchedulingSection() {
                     onChange={(e) => setForm({ ...form, notes: e.target.value })}
                     className="w-full px-4 py-3 rounded-xl border border-[#d1e3d5] bg-[#f8faf8] text-sm text-[#1d2a23] focus:outline-none focus:ring-2 focus:ring-[#2e6f40]"
                   />
+                  <p className="text-xs text-[#5c6f64] mt-1.5 flex items-start gap-1.5 leading-relaxed">
+                    <span className="text-[#2e6f40] shrink-0 font-bold">ℹ️</span>
+                    <span>Para proteger a sua privacidade, evite indicar detalhes clínicos sensíveis neste campo durante o pedido de marcação.</span>
+                  </p>
+                </div>
+
+                {/* Consentimento RGPD */}
+                <div className="sm:col-span-2 pt-2 border-t border-[#f0f6f2]">
+                  <label className="flex items-start gap-3 cursor-pointer group select-none">
+                    <input
+                      type="checkbox"
+                      checked={consentGiven}
+                      onChange={(e) => {
+                        setConsentGiven(e.target.checked);
+                        if (e.target.checked && errors.consent) {
+                          setErrors((prev) => ({ ...prev, consent: undefined }));
+                        }
+                      }}
+                      className="mt-1 h-4 w-4 rounded border-[#d1e3d5] text-[#2e6f40] focus:ring-[#2e6f40] cursor-pointer shrink-0"
+                    />
+                    <span className="text-xs sm:text-sm text-[#1d2a23] leading-relaxed">
+                      Li e aceito a{" "}
+                      <Link
+                        href="/privacidade"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold text-[#2e6f40] hover:underline cursor-pointer"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Política de Privacidade
+                      </Link>{" "}
+                      e autorizo o tratamento dos meus dados para efeitos de gestão do pedido de marcação e comunicação relacionada com a consulta.{" "}
+                      <span className="text-red-500">*</span>
+                    </span>
+                  </label>
+                  {errors.consent && (
+                    <p className="text-xs text-red-500 mt-1.5 pl-7">{errors.consent}</p>
+                  )}
                 </div>
               </div>
 
@@ -834,6 +884,23 @@ export default function SchedulingSection() {
                     </p>
                   </div>
                 )}
+              </div>
+
+              {/* Informação discreta de conformidade no Passo 4 */}
+              <div className="p-3.5 bg-[#f0f6f2] rounded-xl border border-[#d1e3d5] text-xs text-[#5c6f64] flex items-center gap-2">
+                <span className="text-[#2e6f40] text-sm shrink-0">🔒</span>
+                <span>
+                  O seu pedido será submetido de acordo com a{" "}
+                  <Link
+                    href="/privacidade"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-[#2e6f40] hover:underline"
+                  >
+                    Política de Privacidade
+                  </Link>{" "}
+                  aceite.
+                </span>
               </div>
 
               {/* Error message banner if booking submission fails */}

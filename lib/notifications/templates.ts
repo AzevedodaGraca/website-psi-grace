@@ -37,7 +37,7 @@ export function formatModalityPt(type: "presencial" | "online"): {
   if (type === "presencial") {
     return {
       title: "Consulta Presencial",
-      location: "Gabinete em Ovar: Rua de Timor, 67 – 1.º H, 3880-297 Ovar",
+      location: "Gabinete em Ovar: Rua de Timor, 67 – 1.º H, 3880-180 Ovar",
     };
   }
   return {
