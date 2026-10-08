@@ -682,10 +682,14 @@ export default function SchedulingSection() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {/* Nome completo */}
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-[#1d2a23] mb-2">
+                  <label
+                    htmlFor="booking-name"
+                    className="block text-xs font-bold uppercase tracking-wider text-[#1d2a23] mb-2"
+                  >
                     Nome Completo <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="booking-name"
                     type="text"
                     placeholder="Ex.: Maria Santos Silva"
                     value={form.name}
@@ -701,10 +705,14 @@ export default function SchedulingSection() {
 
                 {/* E-mail */}
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-[#1d2a23] mb-2">
+                  <label
+                    htmlFor="booking-email"
+                    className="block text-xs font-bold uppercase tracking-wider text-[#1d2a23] mb-2"
+                  >
                     E-mail <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="booking-email"
                     type="email"
                     placeholder="Ex.: maria@exemplo.pt"
                     value={form.email}
@@ -720,10 +728,14 @@ export default function SchedulingSection() {
 
                 {/* Telefone / WhatsApp */}
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-[#1d2a23] mb-2">
+                  <label
+                    htmlFor="booking-phone"
+                    className="block text-xs font-bold uppercase tracking-wider text-[#1d2a23] mb-2"
+                  >
                     Telefone / WhatsApp <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="booking-phone"
                     type="tel"
                     placeholder="Ex.: +351 912 345 678"
                     value={form.phone}
@@ -739,10 +751,14 @@ export default function SchedulingSection() {
 
                 {/* Observações */}
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-[#1d2a23] mb-2">
+                  <label
+                    htmlFor="booking-notes"
+                    className="block text-xs font-bold uppercase tracking-wider text-[#1d2a23] mb-2"
+                  >
                     Observação <span className="text-xs font-normal text-[#5c6f64]">(opcional)</span>
                   </label>
                   <textarea
+                    id="booking-notes"
                     rows={3}
                     placeholder="Alguma nota ou esclarecimento adicional que deseje partilhar..."
                     value={form.notes}
