@@ -1,7 +1,9 @@
 # PROJECT BRIEF — Website Psicóloga Grace Azevedo da Graça
 
-**Versão:** 1.0
-**Status:** Planejamento / Inicialização
+**Versão:** 1.1
+**Status:** Production Readiness
+**Fase atual:** Phase 9
+**Subfase:** 9.4 — Documentação & Alinhamento
 **Projeto:** Website profissional da Psicóloga Grace Azevedo da Graça
 **Localização:** Ovar, Aveiro, Portugal
 
@@ -22,13 +24,13 @@ O website terá como objetivos principais:
 * Apresentar o consultório físico.
 * Informar sobre atendimento presencial e online.
 * Facilitar o contato através do WhatsApp.
-* Permitir futuramente o agendamento online de consultas.
+* Disponibilizar o agendamento online de consultas (implementado).
 * Apresentar a localização do consultório.
 * Integrar Google Maps.
 * Apresentar perguntas frequentes.
 * Integrar o Instagram profissional.
-* Disponibilizar futuramente uma área administrativa.
-* Disponibilizar futuramente um chatbot assistente.
+* Disponibilizar uma área administrativa de gestão (implementada).
+* Chatbot assistente (STATUS ATUAL: ADIADO / FORA DO ESCOPO DO LANÇAMENTO INICIAL; ver Secção 23).
 * Servir como base para um futuro aplicativo mobile desenvolvido em Dart/Flutter.
 
 O website deverá ser responsivo e funcionar corretamente em:
@@ -153,23 +155,21 @@ O website deverá apresentar essas áreas de forma clara e acolhedora, sem trans
 
 ## Dias de atendimento
 
-* Segunda-feira.
-* Terça-feira.
-* Quarta-feira.
-* Quinta-feira.
-* Sexta-feira.
+* Segunda-feira a Sexta-feira (dias úteis).
+* Atendimento **por marcação prévia**.
 
-## Horário
+## Horário e Slots Implementados
 
-Atendimento **por marcação**.
+O sistema opera com consultas em **slots padronizados de 1 hora** (60 minutos):
+* Horários autorizados: `09:00`, `10:00`, `11:00`, `12:00`, `13:00`, `14:00`, `15:00`, `16:00`, `17:00`, `18:00`, `19:00`, `20:00`.
+* Fuso Horário Oficial: `Europe/Lisbon`.
 
-Os horários específicos disponíveis ainda deverão ser configurados posteriormente no sistema de agendamento.
+## Gestão de Disponibilidade (Implementada)
 
-IMPORTANTE:
-
-Os horários não devem ficar permanentemente hard-coded no frontend quando o sistema de agendamento estiver implementado.
-
-No futuro, a disponibilidade deverá ser controlada através de uma área administrativa.
+A disponibilidade real é controlada dinamicamente através do backend e do painel administrativo:
+* Regras semanais baseadas em `availability_schedules`.
+* Capacidade de bloqueio de dias inteiros ou horários específicos pela profissional através da gestão de exceções (`date_overrides`).
+* Validação atómica server-side impedindo marcações em slots já ocupados ou datas passadas.
 
 ---
 
@@ -460,91 +460,68 @@ O website/app deverá apenas facilitar o contato e direcionar o paciente para o 
 
 ---
 
-# 21. Agendamento Online
+# 21. Agendamento Online (Implementado)
 
-O sistema de agendamento será uma das principais funcionalidades futuras do website.
+O sistema de agendamento online encontra-se integralmente implementado e funcional:
 
-Fluxo esperado:
+Fluxo implementado (5 etapas):
 
-1. Paciente acessa "Agendar Consulta".
-2. Escolhe o tipo de atendimento.
-3. Escolhe presencial ou online.
-4. Visualiza datas disponíveis.
-5. Escolhe um dia.
-6. Visualiza horários disponíveis.
-7. Escolhe um horário.
-8. Preenche os dados necessários.
-9. Confirma o pedido/agendamento.
-10. O sistema registra a consulta.
-11. A psicóloga poderá visualizar o agendamento na área administrativa.
-12. O paciente receberá a confirmação conforme o mecanismo definido na implementação.
-
-A disponibilidade deverá ser baseada nos horários configurados pela psicóloga.
+1. **Modalidade:** Utente escolhe entre Consulta Presencial (Gabinete em Ovar) ou Consulta Online (videochamada via WhatsApp).
+2. **Data & Horário:** Seleção em calendário mensal com carregamento dinâmico dos horários disponíveis em horas certas (slots de 1 hora, fuso `Europe/Lisbon`).
+3. **Dados do Utente:** Preenchimento de Nome Completo, E-mail, Telefone/WhatsApp, Observação opcional (com aviso de privacidade) e aceitação obrigatória da Política de Privacidade (RGPD).
+4. **Resumo:** Conferência de todos os dados antes da submissão.
+5. **Confirmação:** Gravação atómica no Supabase com status `pending`, prevenção rigorosa de conflitos e disparo imediato de e-mails transacionais (via Resend) para o utente e para a psicóloga.
 
 ---
 
-# 22. Área Administrativa
+# 22. Área Administrativa (Implementada)
 
-A área administrativa será implementada em uma etapa posterior.
+A área administrativa encontra-se implementada e em operação:
 
-A psicóloga deverá futuramente conseguir:
-
-* Fazer login.
-* Visualizar consultas.
-* Visualizar agenda.
-* Configurar horários.
-* Bloquear datas.
-* Liberar horários.
-* Gerenciar disponibilidade.
-* Visualizar informações necessárias dos agendamentos.
-* Alterar informações configuráveis da clínica.
-
-IMPORTANTE:
-
-A área administrativa deverá ser protegida por autenticação.
-
-Informações administrativas e dados de pacientes nunca devem ser expostos publicamente.
+* **Acesso:** Rotas `/admin` e `/admin/login`.
+* **Segurança & Autenticação:**
+  * Autenticação via Supabase Auth.
+  * Proteção de rotas através de Next.js Middleware e validação server-side com restrição de acesso ao e-mail administrativo autorizado (`ADMIN_EMAIL`).
+  * Políticas de Row Level Security (RLS) e isolamento da chave `SUPABASE_SERVICE_ROLE_KEY` no servidor.
+* **Funcionalidades do Painel:**
+  * **Gestão de Marcações (`AppointmentsManager`):** Visualização de pedidos com filtros de status (`pending`, `confirmed`, `cancelled`), confirmação, cancelamento e registo de observações.
+  * **Gestão de Disponibilidade (`DateOverridesManager`):** Bloqueio de datas inteiras (férias/feriados) ou configuração de exceções para horários específicos na tabela `availability_schedules`.
 
 ---
 
 # 23. Chatbot
 
-O projeto deverá possuir futuramente um chatbot de atendimento inicial.
+> **STATUS ATUAL:** **ADIADO / FORA DO ESCOPO DO LANÇAMENTO INICIAL.**
+>
+> O chatbot de IA **não será implementado** na versão de lançamento atual do website.
+> O atendimento e a comunicação inicial permanecem centralizados no WhatsApp oficial da clínica (+351 926 362 033) e no formulário de marcação online.
+> A funcionalidade de assistente virtual poderá ser reconsiderada numa fase futura após o lançamento.
 
-O chatbot será um **assistente virtual da clínica**, e não um substituto da psicóloga.
+### Especificação Conceitual e Limitações Éticas (Para Referência Futura)
 
-O chatbot poderá responder perguntas relacionadas a:
+Caso venha a ser implementado futuramente, o chatbot atuará estritamente como **assistente virtual informativo da clínica**, e não como substituto da psicóloga.
 
-* Serviços.
-* Tipos de atendimento.
-* Atendimento presencial.
-* Atendimento online.
-* Localização.
-* Horários.
-* Agendamento.
-* Formas de pagamento.
-* Primeira entrevista.
-* Informações gerais da clínica.
-* FAQ.
+O chatbot poderá responder a dúvidas práticas sobre:
 
-O chatbot poderá direcionar o usuário para:
+* Serviços e tipos de atendimento.
+* Atendimento presencial e online.
+* Localização do consultório em Ovar.
+* Horários gerais e funcionamento do agendamento.
+* Formas de pagamento e primeira entrevista gratuita.
+* FAQ e direcionamento para o WhatsApp oficial.
 
-* Agendamento.
-* WhatsApp.
-* Contato.
+## Limitações Mandatórias do Chatbot
 
-## Limitações do chatbot
+O chatbot **NUNCA** deverá:
 
-O chatbot NÃO deverá:
+* Fazer diagnóstico psicológico ou psiquiátrico.
+* Afirmar que uma pessoa possui determinada patologia.
+* Substituir a avaliação clínica profissional.
+* Simular uma sessão de psicoterapia ou aconselhamento terapêutico.
+* Fornecer aconselhamento clínico em situações de crise ou urgência.
+* Inventar informações sobre a profissional ou a clínica.
 
-* Fazer diagnóstico psicológico.
-* Afirmar que uma pessoa possui determinada condição.
-* Substituir avaliação profissional.
-* Simular uma sessão de psicoterapia.
-* Fornecer aconselhamento clínico como se fosse a psicóloga.
-* Inventar informações sobre a profissional.
-
-Em situações que exigem avaliação profissional, o chatbot deverá orientar o usuário a entrar em contato com a psicóloga ou procurar ajuda profissional adequada.
+Em qualquer situação que sugira sofrimento agudo ou necessidade de acompanhamento, o chatbot deverá orientar imediatamente o utilizador a contactar a psicóloga via WhatsApp ou recorrer às linhas nacionais de emergência/saúde mental (ex.: Linha SNS 24 - 808 24 24 24).
 
 ---
 
@@ -599,68 +576,54 @@ Os campos poderão ser revisados durante a implementação para minimizar coleta
 
 ---
 
-# 27. Privacidade e Segurança
+# 27. Privacidade e Segurança (RGPD Implementado)
 
-Este projeto será utilizado por uma profissional de psicologia em Portugal.
+Este projeto opera sob as diretrizes do **Regulamento Geral sobre a Proteção de Dados (RGPD - Regulamento UE 2016/679)** e da legislação portuguesa aplicável:
 
-Segurança e privacidade deverão ser consideradas desde o início da arquitetura.
-
-Princípios:
-
-* Minimização de dados.
-* Autenticação segura.
-* Controle de acesso.
-* Proteção das informações administrativas.
-* Não expor dados de pacientes publicamente.
-* Não armazenar informações desnecessárias.
-* Utilizar HTTPS em produção.
-* Proteger credenciais e chaves de API.
-* Nunca colocar secrets diretamente no código-fonte.
-* Utilizar variáveis de ambiente.
-* Separar frontend, backend e dados sensíveis adequadamente.
-
-Qualquer implementação envolvendo dados pessoais ou dados relacionados à saúde deverá ser revisada antes de entrar em produção.
+### Implementação de Conformidade Realizada:
+* **Página de Política de Privacidade:** Criada em `/privacidade`, detalhando os direitos dos titulares, finalidades de tratamento, prazos de conservação e canais de contacto.
+* **Consentimento Prévio Obrigatório:** O formulário de marcação exige aceitação expressa dos termos antes do envio.
+* **Registo de Consentimento na Base de Dados:** São guardados de forma verificável:
+  * `consent_given` (booleano `true`);
+  * `consent_timestamp` (carimbo temporal em formato ISO UTC);
+  * `consent_version` (versão da política aceite, ex.: `2026-10-01`).
+* **Proteção de Dados Clínicos:** Alerta proeminente no formulário informando o utente para não descrever dados clínicos ou diagnósticos no campo de observações.
+* **Minimização de Dados:** Apenas os dados de contacto indispensáveis para o agendamento são recolhidos.
+* **Isolamento de Credenciais:** Nenhuma chave secreta (`SUPABASE_SERVICE_ROLE_KEY` ou `RESEND_API_KEY`) é exposta ao cliente. `.env.local` é estritamente ignorado pelo Git.
 
 ---
 
-# 28. Arquitetura Tecnológica
+# 28. Arquitetura Tecnológica Atual
 
 ## Frontend
+* **Framework:** Next.js 16.3.8 (App Router, Turbopack, Server Actions)
+* **Biblioteca UI:** React 19.2.8
+* **Linguagem:** TypeScript 5
+* **Estilização:** Tailwind CSS v4
 
-Tecnologias planejadas:
-
-* Next.js.
-* React.
-* TypeScript.
-* Tailwind CSS.
-
-## Backend / Database
-
-Tecnologia planejada:
-
-* Supabase.
-* PostgreSQL.
+## Backend / Base de Dados
+* **Plataforma:** Supabase (BaaS)
+* **Base de Dados:** PostgreSQL com schemas e migrations versionadas
+* **Políticas:** Row Level Security (RLS) e hardening de privilégios de tabelas
 
 ## Autenticação
+* **Sistema:** Supabase Auth (utilizado para acesso administrativo à área `/admin`)
+* **Proteção:** Next.js Middleware e validação de sessão server-side vinculada ao `ADMIN_EMAIL`
 
-* Supabase Auth.
+## E-mails Transacionais / Notificações
+* **Provedor:** Resend (`resend` SDK)
+* **Implementação:** Server-only (`lib/notifications/`) com templates HTML em Português de Portugal para confirmações de consultas e avisos à administração
+* **Ambiente:** Suporte a e-mails de teste e transição para domínio verificado em produção
+
+## Inteligência Artificial (Chatbot)
+* **STATUS:** **ADIADO / FORA DO ESCOPO DO LANÇAMENTO ATUAL**
+* Não há integrações de IA ou chamadas a modelos LLM no lançamento inicial do website.
 
 ## Hospedagem
+* **Plataforma Prevista:** Vercel
 
-* Vercel.
-
-## Inteligência Artificial
-
-* API de IA será definida posteriormente.
-* O chatbot deverá utilizar uma arquitetura segura.
-* Chaves de API nunca deverão ser expostas no frontend.
-
-## Futuro aplicativo
-
-* Dart.
-* Flutter.
-
-O aplicativo será desenvolvido em uma etapa posterior e deverá utilizar o backend existente sempre que possível.
+## Futuro Aplicativo Mobile
+* **Tecnologia:** Dart / Flutter (etapa posterior ao lançamento do website)
 
 ---
 
@@ -899,166 +862,152 @@ Antes de instalar uma biblioteca, avaliar se ela é realmente necessária.
 
 * [x] Criar repositório/pasta do projeto.
 * [x] Criar PROJECT_BRIEF.md.
-* [ ] Inicializar projeto Next.js.
-* [ ] Configurar TypeScript.
-* [ ] Configurar Tailwind CSS.
-* [ ] Configurar estrutura inicial.
-* [ ] Configurar Git.
-* [ ] Criar README.md.
+* [x] Inicializar projeto Next.js (16.3.8).
+* [x] Configurar TypeScript.
+* [x] Configurar Tailwind CSS v4.
+* [x] Configurar estrutura inicial de diretórios.
+* [x] Configurar Git.
+* [x] Criar README.md com documentação oficial do projeto.
 
 ---
 
 ## Sprint 1 — Identidade Visual e Base do Website
 
-* [ ] Definir design tokens.
-* [ ] Definir paleta.
-* [ ] Configurar tipografia.
-* [ ] Adicionar árvore oficial.
-* [ ] Adicionar fotografias.
-* [ ] Criar Header.
-* [ ] Criar Footer.
-* [ ] Criar sistema de navegação.
-* [ ] Criar layout responsivo.
+* [x] Definir design tokens (verde, branco, madeira suave).
+* [x] Definir paleta inspirada nos materiais reais da clínica.
+* [x] Configurar tipografia.
+* [x] Adicionar árvore oficial da clínica.
+* [x] Adicionar fotografias reais do gabinete e da psicóloga.
+* [x] Criar Header institucional responsivo.
+* [x] Criar Footer institucional com navegação e direitos.
+* [x] Criar sistema de navegação suave por âncoras.
+* [x] Criar layout responsivo mobile-first.
 
 ---
 
 ## Sprint 2 — Homepage
 
-* [ ] Hero.
-* [ ] Frase principal.
-* [ ] Apresentação da Grace.
-* [ ] Abordagem terapêutica.
-* [ ] Áreas de atuação.
-* [ ] Tipos de atendimento.
-* [ ] Consultório.
-* [ ] Atendimento online.
-* [ ] CTA de agendamento.
-* [ ] Contato.
-* [ ] Footer.
+* [x] Hero com apresentação visual de acolhimento.
+* [x] Frase principal de Jean-Paul Sartre.
+* [x] Apresentação da Dra. Grace Azevedo da Graça.
+* [x] Abordagem terapêutica (Sistémica e TCC).
+* [x] Áreas de atuação (ansiedade, depressão, burnout, PHDA, etc.).
+* [x] Tipos de atendimento (adultos, casais, famílias, infanto-juvenil).
+* [x] Consultório e galeria de fotos reais.
+* [x] Atendimento presencial e online (via WhatsApp).
+* [x] CTA de agendamento online.
+* [x] Seção de contacto e WhatsApp direto.
+* [x] Footer institucional.
 
 ---
 
 ## Sprint 3 — Conteúdo Institucional
 
-* [ ] Sobre a Grace.
-* [ ] Formação.
-* [ ] Especializações.
-* [ ] Experiência.
-* [ ] Abordagens.
-* [ ] Áreas de atuação.
-* [ ] Tipos de atendimento.
-* [ ] Missão.
-* [ ] Valores.
+* [x] Biografia profissional da Dra. Grace.
+* [x] Formação académica (Universidade Estácio de Sá).
+* [x] Especializações (Terapia Familiar e de Casal, abordagem Sistémica).
+* [x] Experiência profissional (>10 anos).
+* [x] Abordagens clínicas documentadas.
+* [x] Áreas de intervenção apresentadas com rigor clínico.
+* [x] Missão institucional.
+* [x] Valores profissionais e respeito pela meta-ética.
 
 ---
 
 ## Sprint 4 — Localização e Contato
 
-* [ ] Seção "Onde estamos".
-* [ ] Foto da fachada.
-* [ ] Endereço.
-* [ ] Google Maps.
-* [ ] WhatsApp.
-* [ ] E-mail.
-* [ ] Instagram.
-* [ ] Formulário de contato.
+* [x] Seção "Onde estamos" com foto real da fachada e placa.
+* [x] Endereço completo do gabinete em Ovar.
+* [x] Integração de mapa interativo / direções.
+* [x] Botões diretos para WhatsApp (+351 926 362 033).
+* [x] E-mail institucional.
+* [x] Ligação ao Instagram profissional (@grcpsi).
+* [x] Formulário de contacto e pedido de agendamento.
 
 ---
 
-## Sprint 5 — Sistema de Agendamento
+## Sprint 5 — Sistema de Agendamento Online
 
-* [ ] Modelagem dos horários.
-* [ ] Modelagem das consultas.
-* [ ] Escolha do tipo de atendimento.
-* [ ] Escolha presencial/online.
-* [ ] Seleção de data.
-* [ ] Seleção de horário.
-* [ ] Formulário.
-* [ ] Confirmação.
-* [ ] Persistência no banco.
+* [x] Modelagem de slots de consulta de 1 hora (`09:00` às `20:00`).
+* [x] Seleção de modalidade: Consulta Presencial (Ovar) ou Consulta Online (WhatsApp).
+* [x] Calendário mensal interativo com bloqueio de datas passadas.
+* [x] Verificação dinâmica de horários disponíveis no fuso `Europe/Lisbon`.
+* [x] Formulário de contacto do utente com sanitização e validação server-side.
+* [x] Consentimento RGPD obrigatório com carimbo temporal.
+* [x] Resumo de conferência antes da confirmação.
+* [x] Persistência atómica no Supabase com status `pending`.
 
 ---
 
 ## Sprint 6 — Backend e Área Administrativa
 
-* [ ] Configurar Supabase.
-* [ ] Configurar PostgreSQL.
-* [ ] Configurar autenticação.
-* [ ] Criar área administrativa.
-* [ ] Dashboard.
-* [ ] Agenda.
-* [ ] Gerenciamento de disponibilidade.
-* [ ] Bloqueio de datas.
-* [ ] Gestão de consultas.
+* [x] Configuração de projeto e cliente Supabase (PostgreSQL).
+* [x] Migrations SQL com tabelas `appointments` e `availability_schedules`.
+* [x] Políticas rigorosas de Row Level Security (RLS) e hardening de privilégios.
+* [x] Autenticação administrativa com Supabase Auth.
+* [x] Proteção de rotas `/admin` com Next.js Middleware e validação de `ADMIN_EMAIL`.
+* [x] Painel de gestão de consultas (`AppointmentsManager`) com visualização, confirmação, cancelamento e notas.
+* [x] Gestão de disponibilidade (`DateOverridesManager`) para bloqueio de dias e exceções horárias.
 
 ---
 
-## Sprint 7 — WhatsApp e Notificações
+## Sprint 7 — WhatsApp e Notificações (Resend)
 
-* [ ] Integração de contato WhatsApp.
-* [ ] Fluxo pós-agendamento.
-* [ ] Mensagens de confirmação.
-* [ ] Definir estratégia de notificações.
-
----
-
-## Sprint 8 — Chatbot
-
-* [ ] Definir arquitetura.
-* [ ] Criar FAQ base.
-* [ ] Criar comportamento do assistente.
-* [ ] Integrar IA.
-* [ ] Definir limites.
-* [ ] Integrar WhatsApp/agendamento quando apropriado.
+* [x] Integração de botões e links de WhatsApp institucional.
+* [x] Fluxo de confirmação pós-agendamento.
+* [x] Sistema de notificações transacionais por e-mail com Resend.
+* [x] Templates em HTML responsivo (PT-PT) para utente e administração.
+* [x] Isolamento seguro de chaves de API (`RESEND_API_KEY`) no servidor.
 
 ---
 
-## Sprint 9 — Qualidade
+## Sprint 8 — Chatbot [ADIADO / PÓS-LANÇAMENTO]
 
-* [ ] Testes funcionais.
-* [ ] Testes responsivos.
-* [ ] Testes de acessibilidade.
-* [ ] Testes de segurança.
-* [ ] SEO.
-* [ ] Performance.
-* [ ] Revisão de conteúdo.
-* [ ] Revisão visual.
+> **STATUS:** **ADIADO / FORA DO ESCOPO DO LANÇAMENTO ATUAL.**
+>
+> O desenvolvimento do assistente virtual por IA não será realizado nesta etapa e não constitui pré-requisito para o lançamento do website.
+> As especificações conceituais e limites clínicos encontram-se preservadas na Secção 23 para eventual consideração futura.
 
 ---
 
-## Sprint 10 — Produção
+## Sprint 9 — Qualidade & Production Readiness (Phase 9)
 
-* [ ] Configurar domínio.
-* [ ] Configurar Vercel.
-* [ ] Configurar variáveis de ambiente.
-* [ ] Configurar produção.
-* [ ] Testar website em produção.
-* [ ] Testar agendamento.
-* [ ] Testar WhatsApp.
-* [ ] Testar formulários.
-* [ ] Publicar.
+* [x] **Phase 9.1 — Auditoria de Production Readiness:** Concluída. Mapeamento de vulnerabilidades, lint e requisitos de lançamento.
+* [x] **Phase 9.2 — Segurança & Correções Técnicas:** Concluída. Atualização do Next.js de 16.3.1 para a versão de patch 16.3.8 (resolvendo CVEs e sharp), limpeza de warning no lint e integridade do lockfile.
+* [x] **Phase 9.3 — SEO & Acessibilidade:** Concluída. Proteção em `app/robots.ts` impedindo indexação de `/admin` e `/admin/`; associação semântica de `htmlFor` e `id` no formulário de marcação.
+* [x] **Phase 9.4 — Documentação & Alinhamento:** Em andamento. Alinhamento de README.md, PROJECT_BRIEF.md e AGENTS.md com a realidade do projeto.
+* [ ] **Phase 9.5 — Preparação para Deploy:** Pendente. Verificação de build de produção, checklist de variáveis de ambiente de produção e domínio.
+* [ ] **Phase 9.6 — Validação Final Pré-Lançamento:** Pendente. Smoke tests finais de rotas, formulários e fluxos antes da publicação definitiva.
+
+---
+
+## Sprint 10 — Lançamento e Publicação em Produção
+
+* [ ] Configurar domínio próprio de produção (ex.: `grcpsi.pt`).
+* [ ] Configurar projeto de produção na Vercel com DNS definitivo.
+* [ ] Configurar domínio e remetente corporativo verificado no Resend.
+* [ ] Configurar variáveis de ambiente definitivas de produção.
+* [ ] Testes de validação finais em produção (smoke tests).
+* [ ] Publicação oficial e abertura ao público.
 
 ---
 
 # 37. Futuro — Flutter App
 
-Após o website e backend estarem estáveis:
+Após o website e backend estarem em produção e consolidados:
 
 * [ ] Criar projeto Flutter.
-* [ ] Definir arquitetura mobile.
-* [ ] Conectar ao backend existente.
+* [ ] Definir arquitetura mobile (MVVM).
+* [ ] Conectar ao backend Supabase existente.
 * [ ] Autenticação.
-* [ ] Home.
-* [ ] Perfil da clínica.
-* [ ] Agendamento.
-* [ ] Consultas.
-* [ ] WhatsApp.
+* [ ] Home e perfil da profissional.
+* [ ] Agendamento de consultas.
+* [ ] Histórico e próximas consultas.
+* [ ] Contacto direto via WhatsApp.
 * [ ] FAQ.
-* [ ] Chatbot.
-* [ ] Notificações.
-* [ ] Testes.
-* [ ] Publicação Android.
-* [ ] Publicação iOS.
+* [ ] Notificações push.
+* [ ] Chatbot (se implementado posteriormente).
+* [ ] Publicação nas lojas Google Play e Apple App Store.
 
 ---
 
@@ -1081,33 +1030,30 @@ A identidade, as fotografias, a árvore, as informações profissionais e a expe
 # 39. Estado Atual
 
 ## Informações
-
-* [x] Informações profissionais recebidas.
-* [x] Informações da clínica recebidas.
-* [x] Serviços definidos.
-* [x] Áreas de atuação definidas.
-* [x] Horários gerais definidos.
-* [x] Formas de pagamento definidas.
-* [x] Objetivos do website definidos.
+* [x] Informações profissionais e credenciais OPP/EuroPsy validadas.
+* [x] Informações da clínica e endereço físico em Ovar validados.
+* [x] Serviços, abordagens e especialidades definidos.
+* [x] Regras de agendamento e horários implementados.
+* [x] Política de privacidade e conformidade RGPD implementadas.
 
 ## Assets
+* [x] Fotografias profissionais da psicóloga integradas.
+* [x] Fotografias reais da clínica, sala e espaço infantil integradas.
+* [x] Fotografia da fachada com placa da clínica integrada.
+* [x] Árvore oficial da identidade visual integrada no header, footer e elementos de design.
 
-* [x] Fotografias da psicóloga.
-* [x] Fotografias da clínica.
-* [x] Fotografias do espaço infantil.
-* [x] Fotografia da fachada.
-* [x] Fotografia da placa da clínica.
-* [x] Árvore oficial da identidade visual.
-* [x] Composição gráfica com árvore.
-
-## Desenvolvimento
-
-* [x] Pasta `website-psi-grace` criada.
-* [x] `PROJECT_BRIEF.md` criado.
-* [ ] Projeto Next.js inicializado.
-* [ ] Git configurado para este projeto.
-* [ ] Frontend iniciado.
-* [ ] Backend iniciado.
+## Desenvolvimento de Software
+* [x] Projeto Next.js 16.3.8 estruturado com TypeScript e Tailwind CSS v4.
+* [x] Repositório Git com histórico rigoroso de commits e branches.
+* [x] Frontend responsivo completo com todas as seções institucionais.
+* [x] Sistema de agendamento online funcional com prevenção de conflitos.
+* [x] Base de dados PostgreSQL no Supabase com RLS ativado.
+* [x] Autenticação e painel administrativo `/admin` funcional.
+* [x] Provedor de e-mails transacionais via Resend com templates em PT-PT.
+* [x] Página de política de privacidade `/privacidade` e consentimento RGPD.
+* [x] SEO e regras de `robots.txt` para proteção da área administrativa.
+* [x] Chatbot: **ADIADO / FORA DO ESCOPO DO LANÇAMENTO INICIAL**.
+* [ ] Deploy em produção (aguardando conclusão das subfases 9.5 e 9.6).
 
 ---
 

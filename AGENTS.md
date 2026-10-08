@@ -168,26 +168,25 @@ Do not use misleading SEO content or keyword stuffing.
 
 ---
 
-## 10. Appointment Scheduling
+## 10. Appointment Scheduling (Implemented)
 
-Appointment scheduling is part of the planned website functionality.
+The online appointment scheduling system is implemented and functional.
 
-The scheduling system must eventually allow users to:
-- View available dates
-- View available times
-- Select an appointment
-- Provide the required information
-- Receive appropriate confirmation
-
-Do not implement the final booking logic until the required business rules and data model have been explicitly defined.
-
-Never invent availability.
+Key architectural rules:
+- Consultations operate in standard 1-hour slots (`FULL_HOUR_SLOTS`).
+- Supported modalities: Presencial (Gabinete em Ovar) and Online (via WhatsApp).
+- Timezone: `Europe/Lisbon`.
+- Business logic resides server-side in `app/booking/actions.ts`.
+- Persistence and conflict prevention are handled in Supabase (`appointments` and `availability_schedules`).
+- RGPD consent is strictly required on every submission (`consent_given`, `consent_timestamp`, `consent_version`).
+- Future modifications must respect the existing data model, schemas, and RLS policies.
+- Do not alter booking rules, slots, or validation constraints without explicit authorization.
 
 ---
 
 ## 11. Online Consultations
 
-Online consultations will be offered by the psychologist.
+Online consultations are offered by the psychologist.
 
 Video consultations will NOT be implemented as a custom video-call system inside the website or application.
 
@@ -199,55 +198,58 @@ Do not implement WebRTC, custom video rooms, Zoom-like functionality, or another
 
 ## 12. Chatbot
 
-An AI chatbot is planned for the website.
+> **CHATBOT STATUS:** **ADIADO / FORA DO ESCOPO DO LANÇAMENTO INICIAL.**
+>
+> The AI chatbot will **NOT** be implemented in the initial website launch.
+> Do not implement the chatbot automatically.
+> Initial patient triage and contact remain centered on the clinic's official WhatsApp (+351 926 362 033) and the online booking form.
+> This feature may be reconsidered in a future phase after public launch.
 
-The chatbot must be designed carefully and must not:
+### Mandatory Ethical and Clinical Guidelines (For Future Reference)
+When considered in the future, the chatbot must be strictly designed as an informative assistant and must never:
 - Diagnose patients.
-- Provide psychological diagnoses.
-- Replace professional psychological care.
+- Provide psychological or psychiatric diagnoses.
+- Replace professional psychological care or clinical evaluation.
+- Simulate a psychotherapy session or give clinical advice.
 - Provide emergency medical advice.
 - Make clinical decisions.
 
-The chatbot should primarily assist with general information, navigation, frequently asked questions, services and appointment-related information, according to the requirements defined for the project.
-
-Do not implement the chatbot until its scope and technical architecture are explicitly defined.
+In any scenario suggesting acute emotional crisis or emergencies, the assistant must direct the user to official health hotlines (e.g., SNS 24 — 808 24 24 24) or direct contact with the psychologist via WhatsApp.
 
 ---
 
-## 13. Privacy and Sensitive Information
+## 13. Privacy and Sensitive Information (GDPR / RGPD)
 
 This is a psychology/healthcare-related website.
 
-Treat user-provided information and appointment data as potentially sensitive.
-
-Do not expose personal information unnecessarily.
-
-Do not log sensitive user information to the browser console or server logs.
-
-Do not store patient information in client-side storage unless explicitly required and properly designed.
-
-Privacy, security and applicable data-protection requirements must be considered before implementing appointment storage or patient-related functionality.
+Treat user-provided information and appointment data as sensitive:
+- Maintain full GDPR compliance (`/privacidade` page and immutable consent logs).
+- Do not expose personal or appointment data publicly.
+- Do not log sensitive user information to client consoles or server logs.
+- Never store patient information in insecure client-side storage.
+- Respect database RLS policies and server-only service role execution.
 
 ---
 
-## 14. Development Process
+## 14. Development Process & Workflow
 
-Work incrementally.
+The project follows a strict phased governance lifecycle:
 
-Do not implement the entire project in one step.
+```text
+IMPLEMENTAR
+→ VALIDAR
+→ REVISAR
+→ APROVAR
+→ COMMIT
+→ PRÓXIMA FASE
+```
 
-Before making significant changes:
-1. Understand the existing architecture.
-2. Read the relevant project documentation.
-3. Identify the affected files.
-4. Explain the proposed approach when appropriate.
-5. Implement the smallest coherent change.
-6. Verify the result.
-7. Fix errors before continuing.
-
-Do not modify unrelated files.
-
-Do not remove existing functionality unless explicitly requested.
+Mandatory execution rules:
+1. **No Unapproved Commits:** Never create a Git commit before presenting the exact diff and receiving explicit user approval.
+2. **No Automatic Pushes or Deploys:** Never push to remote or trigger production deployments without authorization.
+3. **No Unsafe Environment Changes:** Never commit, display, print, or modify `.env.local` or production API keys.
+4. **No Ad-Hoc Database Mutations:** Never execute arbitrary `INSERT`, `UPDATE`, or `DELETE` queries against production tables during testing unless explicitly instructed.
+5. **Smallest Coherent Change:** Work incrementally; do not modify unrelated files.
 
 ---
 
@@ -261,12 +263,11 @@ When requirements are ambiguous:
 - Do not invent content.
 
 When implementing UI:
-- Follow the established visual identity.
-- Reuse existing assets.
-- Prefer real project content over placeholders.
+- Follow the established visual identity (white, clinic green, natural tones, official tree logo).
+- Reuse existing clinic photographs; do not use AI-generated images or stock photos for the clinic.
 
 When implementing functionality:
-- Follow the project roadmap.
+- Follow the approved roadmap.
 - Do not implement future phases prematurely.
 
 Always prioritize correctness, maintainability, accessibility, security and user experience.
@@ -275,22 +276,27 @@ Always prioritize correctness, maintainability, accessibility, security and user
 
 ## 16. Project Roadmap
 
-The project will be developed incrementally.
+The project is developed incrementally.
 
-High-level order:
+Status by Phase:
 
-1. Project setup and architecture
-2. Visual identity and website foundation
-3. Professional website pages and sections
-4. Responsive design and accessibility
-5. Appointment scheduling
-6. WhatsApp integration/contact flows
-7. AI chatbot
-8. Testing and refinement
-9. Production deployment
-10. Mobile application with Dart/Flutter
-
-The Flutter application is a separate later phase and must not influence the current implementation unnecessarily.
+1. **Phase 1 — Project Setup & Architecture:** CONCLUÍDA
+2. **Phase 2 — Visual Identity & Base Components:** CONCLUÍDA
+3. **Phase 3 & 4 — Professional Website Pages & Content:** CONCLUÍDA
+4. **Phase 5 — Online Appointment Scheduling System:** CONCLUÍDA
+5. **Phase 6 — WhatsApp Flow & Clinic Content Alignment:** CONCLUÍDA
+6. **Phase 7 — Supabase Backend & Admin Management Area (`/admin`):** CONCLUÍDA
+7. **Phase 8 — Transactional Email Notifications (Resend):** CONCLUÍDA
+8. **Phase 9 — Production Readiness:** EM ANDAMENTO
+   - **9.1** Auditoria de Production Readiness — CONCLUÍDA
+   - **9.2** Segurança & Correções Técnicas (Next.js 16.3.8 patch) — CONCLUÍDA
+   - **9.3** SEO & Acessibilidade — CONCLUÍDA
+   - **9.4** Documentação & Alinhamento — EM ANDAMENTO
+   - **9.5** Preparação para Deploy — PENDENTE
+   - **9.6** Validação Final Pré-Lançamento — PENDENTE
+9. **Chatbot de IA:** ADIADO / PÓS-LANÇAMENTO
+10. **Phase 10 — Lançamento Oficial em Produção (Vercel & Domínio):** PENDENTE
+11. **Mobile Application (Dart/Flutter):** FASE POSTERIOR PÓS-LANÇAMENTO
 
 ---
 

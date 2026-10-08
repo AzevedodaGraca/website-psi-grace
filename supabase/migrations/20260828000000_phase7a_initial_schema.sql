@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS public.appointments (
   appointment_date DATE NOT NULL,
   time_slot VARCHAR(10) NOT NULL CHECK (
     time_slot IN (
-      '09:00', '10:00', '11:00', '12:00',
+      '09:00', '10:00', '11:00', '12:00', '13:00',
       '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'
     )
   ),
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS public.availability_schedules (
   appointment_type VARCHAR(20) NOT NULL CHECK (appointment_type IN ('presencial', 'online')),
   time_slot VARCHAR(10) NOT NULL CHECK (
     time_slot IN (
-      '09:00', '10:00', '11:00', '12:00',
+      '09:00', '10:00', '11:00', '12:00', '13:00',
       '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'
     )
   ),

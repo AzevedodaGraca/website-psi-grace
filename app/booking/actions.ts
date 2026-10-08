@@ -165,7 +165,7 @@ export async function bookAppointment(
       return {
         success: false,
         error:
-          "Horário selecionado inválido. As consultas decorrem exclusivamente em horas certas autorizadas (ex: 09:00, 10:00, 14:00).",
+          "Horário selecionado inválido. As consultas decorrem exclusivamente em horas certas autorizadas (ex: 09:00, 10:00, 13:00, 14:00).",
       };
     }
     const sanitizedTimeSlot: FullHourTimeSlot = rawSlot as FullHourTimeSlot;
