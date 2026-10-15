@@ -24,9 +24,12 @@ async function verifyAdminAuth() {
     return { authorized: false, error: "Não autenticado." };
   }
 
-  const adminEmail = process.env.ADMIN_EMAIL;
-  if (adminEmail && user.email.toLowerCase() !== adminEmail.toLowerCase()) {
-    return { authorized: false, error: "Não autorizado." };
+  const adminEmail = process.env.ADMIN_EMAIL?.trim();
+  if (!adminEmail || user.email.toLowerCase() !== adminEmail.toLowerCase()) {
+    return {
+      authorized: false,
+      error: "Acesso administrativo não configurado ou não autorizado.",
+    };
   }
 
   // Verify registration in public.admin_users

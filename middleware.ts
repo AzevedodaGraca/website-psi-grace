@@ -42,13 +42,14 @@ export async function middleware(request: NextRequest) {
 
   const isLoginPage = pathname === "/admin/login";
 
-  // Optional Admin Email restriction check
-  const adminEmail = process.env.ADMIN_EMAIL;
+  // Strict Admin Email restriction check (deny by default if ADMIN_EMAIL is unset, empty, or does not match)
+  const adminEmail = process.env.ADMIN_EMAIL?.trim();
   const isAuthorizedAdmin =
-    Boolean(user) &&
-    (!adminEmail || user?.email?.toLowerCase() === adminEmail.toLowerCase());
+    Boolean(user?.email) &&
+    Boolean(adminEmail) &&
+    user!.email!.toLowerCase() === adminEmail!.toLowerCase();
 
-  // 1. Unauthenticated user trying to access protected /admin area -> redirect to /admin/login
+  // 1. Unauthenticated or unauthorized user trying to access protected /admin area -> redirect to /admin/login
   if (!isLoginPage && !isAuthorizedAdmin) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/admin/login";
