@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isAuthorizedAdminEmail } from "@/lib/auth/admin";
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
@@ -42,12 +43,8 @@ export async function middleware(request: NextRequest) {
 
   const isLoginPage = pathname === "/admin/login";
 
-  // Strict Admin Email restriction check (deny by default if ADMIN_EMAIL is unset, empty, or does not match)
-  const adminEmail = process.env.ADMIN_EMAIL?.trim();
-  const isAuthorizedAdmin =
-    Boolean(user?.email) &&
-    Boolean(adminEmail) &&
-    user!.email!.toLowerCase() === adminEmail!.toLowerCase();
+  // Strict Admin Email restriction check (supports multiple admins via ADMIN_EMAILS with fallback to ADMIN_EMAIL)
+  const isAuthorizedAdmin = isAuthorizedAdminEmail(user?.email);
 
   // 1. Unauthenticated or unauthorized user trying to access protected /admin area -> redirect to /admin/login
   if (!isLoginPage && !isAuthorizedAdmin) {

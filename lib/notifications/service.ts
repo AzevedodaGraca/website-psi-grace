@@ -13,6 +13,7 @@ import {
 } from "./templates";
 import { EmailNotificationProvider } from "./providers/email";
 import { WhatsAppNotificationProvider } from "./providers/whatsapp";
+import { getAuthorizedAdminEmails } from "@/lib/auth/admin";
 
 // Default singleton provider instances
 const emailProvider = new EmailNotificationProvider();
@@ -28,9 +29,10 @@ export async function dispatchAppointmentCreatedNotifications(
   payload: AppointmentNotificationPayload
 ): Promise<NotificationDispatchResult[]> {
   const results: NotificationDispatchResult[] = [];
+  const adminNotificationEmail = process.env.ADMIN_NOTIFICATION_EMAIL?.trim();
   const adminEmail = (
-    process.env.ADMIN_NOTIFICATION_EMAIL ||
-    process.env.ADMIN_EMAIL ||
+    adminNotificationEmail ||
+    getAuthorizedAdminEmails()[0] ||
     ""
   ).trim();
 

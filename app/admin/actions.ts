@@ -10,6 +10,7 @@ import {
   dispatchAppointmentCancelledNotification,
 } from "@/lib/notifications/service";
 import type { AppointmentNotificationPayload } from "@/lib/notifications/types";
+import { isAuthorizedAdminEmail } from "@/lib/auth/admin";
 
 /**
  * Helper to securely verify caller authentication and admin authorization.
@@ -24,8 +25,8 @@ async function verifyAdminAuth() {
     return { authorized: false, error: "Não autenticado." };
   }
 
-  const adminEmail = process.env.ADMIN_EMAIL?.trim();
-  if (!adminEmail || user.email.toLowerCase() !== adminEmail.toLowerCase()) {
+  const normalizedUserEmail = user.email.trim().toLowerCase();
+  if (!isAuthorizedAdminEmail(normalizedUserEmail)) {
     return {
       authorized: false,
       error: "Acesso administrativo não configurado ou não autorizado.",
@@ -37,21 +38,17 @@ async function verifyAdminAuth() {
   const { data: adminRecord, error: adminErr } = await adminDb
     .from("admin_users")
     .select("id")
-    .or(`user_id.eq.${user.id},email.eq.${user.email.toLowerCase()}`)
+    .or(`user_id.eq.${user.id},email.eq.${normalizedUserEmail}`)
     .maybeSingle();
 
   if (adminErr || !adminRecord) {
-    if (adminEmail && user.email.toLowerCase() === adminEmail.toLowerCase()) {
-      await adminDb.from("admin_users").upsert(
-        {
-          user_id: user.id,
-          email: user.email.toLowerCase(),
-        },
-        { onConflict: "email" }
-      );
-    } else {
-      return { authorized: false, error: "Não autorizado." };
-    }
+    await adminDb.from("admin_users").upsert(
+      {
+        user_id: user.id,
+        email: normalizedUserEmail,
+      },
+      { onConflict: "email" }
+    );
   }
 
   return { authorized: true, user };
