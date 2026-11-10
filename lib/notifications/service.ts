@@ -10,14 +10,23 @@ import {
   buildPatientNewBookingNotification,
   buildPatientConfirmedNotification,
   buildPatientCancelledNotification,
+  resolveAdminNotificationEmail,
+  DEFAULT_ADMIN_NOTIFICATION_EMAIL,
 } from "./templates";
 import { EmailNotificationProvider } from "./providers/email";
 import { WhatsAppNotificationProvider } from "./providers/whatsapp";
-import { getAuthorizedAdminEmails } from "@/lib/auth/admin";
+import type { NotificationProvider } from "./providers/provider";
+
+export { resolveAdminNotificationEmail, DEFAULT_ADMIN_NOTIFICATION_EMAIL };
 
 // Default singleton provider instances
-const emailProvider = new EmailNotificationProvider();
-const whatsAppProvider = new WhatsAppNotificationProvider();
+const defaultEmailProvider = new EmailNotificationProvider();
+const defaultWhatsAppProvider = new WhatsAppNotificationProvider();
+
+export interface NotificationDispatchProviders {
+  emailProvider?: NotificationProvider;
+  whatsAppProvider?: NotificationProvider;
+}
 
 /**
  * Dispatches notifications when a new appointment is created on the website.
@@ -26,19 +35,17 @@ const whatsAppProvider = new WhatsAppNotificationProvider();
  * Non-blocking: Errors are caught and logged safely.
  */
 export async function dispatchAppointmentCreatedNotifications(
-  payload: AppointmentNotificationPayload
+  payload: AppointmentNotificationPayload,
+  providers?: NotificationDispatchProviders
 ): Promise<NotificationDispatchResult[]> {
   const results: NotificationDispatchResult[] = [];
-  const adminNotificationEmail = process.env.ADMIN_NOTIFICATION_EMAIL?.trim();
-  const adminEmail = (
-    adminNotificationEmail ||
-    getAuthorizedAdminEmails()[0] ||
-    ""
-  ).trim();
+  const emailProvider = providers?.emailProvider ?? defaultEmailProvider;
+  const whatsAppProvider = providers?.whatsAppProvider ?? defaultWhatsAppProvider;
+  const adminEmail = resolveAdminNotificationEmail();
 
   if (!adminEmail) {
     console.info(
-      `[Notificações] E-mail do administrador não configurado (ADMIN_EMAIL/ADMIN_NOTIFICATION_EMAIL). Notificação do administrador adiada com segurança (${payload.id}).`
+      `[Notificações] E-mail do administrador não configurado (ADMIN_NOTIFICATION_EMAIL). Notificação do administrador adiada com segurança (${payload.id}).`
     );
     results.push({
       channel: "email",
@@ -71,7 +78,7 @@ export async function dispatchAppointmentCreatedNotifications(
 
   try {
     // 2. Patient Acknowledgment (Email)
-    const patientMessage = buildPatientNewBookingNotification(payload);
+    const patientMessage = buildPatientNewBookingNotification(payload, adminEmail);
     const patientEmailResult = await emailProvider.sendEmail(patientMessage);
     results.push(patientEmailResult);
 
@@ -98,12 +105,16 @@ export async function dispatchAppointmentCreatedNotifications(
  * Dispatches notification when an appointment is confirmed by the administrator.
  */
 export async function dispatchAppointmentConfirmedNotification(
-  payload: AppointmentNotificationPayload
+  payload: AppointmentNotificationPayload,
+  providers?: NotificationDispatchProviders
 ): Promise<NotificationDispatchResult[]> {
   const results: NotificationDispatchResult[] = [];
+  const emailProvider = providers?.emailProvider ?? defaultEmailProvider;
+  const whatsAppProvider = providers?.whatsAppProvider ?? defaultWhatsAppProvider;
+  const adminEmail = resolveAdminNotificationEmail();
 
   try {
-    const patientMessage = buildPatientConfirmedNotification(payload);
+    const patientMessage = buildPatientConfirmedNotification(payload, adminEmail);
     const emailResult = await emailProvider.sendEmail(patientMessage);
     results.push(emailResult);
 
@@ -129,12 +140,16 @@ export async function dispatchAppointmentConfirmedNotification(
  * Dispatches notification when an appointment is cancelled by the administrator.
  */
 export async function dispatchAppointmentCancelledNotification(
-  payload: AppointmentNotificationPayload
+  payload: AppointmentNotificationPayload,
+  providers?: NotificationDispatchProviders
 ): Promise<NotificationDispatchResult[]> {
   const results: NotificationDispatchResult[] = [];
+  const emailProvider = providers?.emailProvider ?? defaultEmailProvider;
+  const whatsAppProvider = providers?.whatsAppProvider ?? defaultWhatsAppProvider;
+  const adminEmail = resolveAdminNotificationEmail();
 
   try {
-    const patientMessage = buildPatientCancelledNotification(payload);
+    const patientMessage = buildPatientCancelledNotification(payload, adminEmail);
     const emailResult = await emailProvider.sendEmail(patientMessage);
     results.push(emailResult);
 

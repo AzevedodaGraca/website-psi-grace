@@ -41,6 +41,7 @@ export interface NotificationMessage {
   recipientName: string;
   recipientEmail?: string;
   recipientPhone?: string;
+  replyTo?: string;
   subject?: string;
   bodyText: string;
   bodyHtml?: string;

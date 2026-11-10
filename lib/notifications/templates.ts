@@ -5,6 +5,39 @@ import type {
   AppointmentNotificationPayload,
   NotificationMessage,
 } from "./types";
+import { isValidEmailAddress, sanitizeReplyToAddress } from "./providers/email";
+
+export const DEFAULT_ADMIN_NOTIFICATION_EMAIL = "gracepsi@hotmail.com";
+
+/**
+ * Resolves the administrative notification and clinic Reply-To email address.
+ * Priority:
+ * 1. ADMIN_NOTIFICATION_EMAIL environment variable (when valid).
+ * 2. Official clinic email fallback (gracepsi@hotmail.com).
+ */
+export function resolveAdminNotificationEmail(): string {
+  const configuredEmail = process.env.ADMIN_NOTIFICATION_EMAIL?.trim().toLowerCase();
+  if (configuredEmail && isValidEmailAddress(configuredEmail)) {
+    return configuredEmail;
+  }
+  return DEFAULT_ADMIN_NOTIFICATION_EMAIL;
+}
+
+/**
+ * Escapes special HTML characters in user-provided strings to prevent
+ * HTML injection or broken markup in email bodies while keeping text readable.
+ */
+export function escapeHtml(value?: string | null): string {
+  if (value === null || value === undefined) {
+    return "";
+  }
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 
 /**
  * Formats an ISO date string (YYYY-MM-DD) into full European Portuguese text.
@@ -42,7 +75,7 @@ export function formatModalityPt(type: "presencial" | "online"): {
   }
   return {
     title: "Consulta Online",
-    location: "Videochamada (plataforma a combinar previamente com o utente)",
+    location: "Videochamada através do WhatsApp",
   };
 }
 
@@ -55,8 +88,16 @@ export function buildAdminNewBookingNotification(
 ): NotificationMessage {
   const modality = formatModalityPt(payload.appointment_type);
   const formattedDate = formatAppointmentDatePt(payload.appointment_date);
+  const safeSubjectName = payload.patient_name.replace(/[\r\n]+/g, " ").trim();
 
-  const subject = `[Nova Marcação] ${payload.patient_name} — ${formattedDate} às ${payload.time_slot}`;
+  const safeNameHtml = escapeHtml(payload.patient_name);
+  const safeEmailHtml = escapeHtml(payload.patient_email);
+  const safePhoneHtml = escapeHtml(payload.patient_phone);
+  const safeNotesHtml = payload.patient_notes
+    ? escapeHtml(payload.patient_notes)
+    : "";
+
+  const subject = `[Nova Marcação] ${safeSubjectName} — ${formattedDate} às ${payload.time_slot}`;
 
   const bodyText = `Nova marcação recebida através do website.
 
@@ -82,7 +123,7 @@ Poderá gerir e confirmar esta consulta através do Painel Administrativo.`;
         <tbody>
           <tr style="border-bottom: 1px solid #e5e7eb;">
             <td style="padding: 10px 0; color: #5c6f64; font-weight: 600; width: 140px;">Utente:</td>
-            <td style="padding: 10px 0; color: #1d2a23; font-weight: bold;">${payload.patient_name}</td>
+            <td style="padding: 10px 0; color: #1d2a23; font-weight: bold;">${safeNameHtml}</td>
           </tr>
           <tr style="border-bottom: 1px solid #e5e7eb;">
             <td style="padding: 10px 0; color: #5c6f64; font-weight: 600;">Data:</td>
@@ -99,15 +140,15 @@ Poderá gerir e confirmar esta consulta através do Painel Administrativo.`;
           <tr style="border-bottom: 1px solid #e5e7eb;">
             <td style="padding: 10px 0; color: #5c6f64; font-weight: 600;">Contactos:</td>
             <td style="padding: 10px 0; color: #1d2a23;">
-              <a href="tel:${payload.patient_phone}" style="color: #2e6f40; text-decoration: none;">${payload.patient_phone}</a> &bull; 
-              <a href="mailto:${payload.patient_email}" style="color: #2e6f40; text-decoration: none;">${payload.patient_email}</a>
+              <a href="tel:${safePhoneHtml}" style="color: #2e6f40; text-decoration: none;">${safePhoneHtml}</a> &bull; 
+              <a href="mailto:${safeEmailHtml}" style="color: #2e6f40; text-decoration: none;">${safeEmailHtml}</a>
             </td>
           </tr>
           ${
-            payload.patient_notes
+            safeNotesHtml
               ? `<tr style="border-bottom: 1px solid #e5e7eb;">
                   <td style="padding: 10px 0; color: #5c6f64; font-weight: 600;">Observação:</td>
-                  <td style="padding: 10px 0; color: #1d2a23; font-style: italic;">&ldquo;${payload.patient_notes}&rdquo;</td>
+                  <td style="padding: 10px 0; color: #1d2a23; font-style: italic;">&ldquo;${safeNotesHtml}&rdquo;</td>
                 </tr>`
               : ""
           }
@@ -124,11 +165,14 @@ Poderá gerir e confirmar esta consulta através do Painel Administrativo.`;
     </div>
   `;
 
+  const replyTo = sanitizeReplyToAddress(payload.patient_email);
+
   return {
     event: "appointment_created_admin",
     recipient: "admin",
     recipientName: "Psicóloga Grace Azevedo da Graça",
     recipientEmail: adminEmail,
+    ...(replyTo ? { replyTo } : {}),
     subject,
     bodyText,
     bodyHtml,
@@ -140,10 +184,12 @@ Poderá gerir e confirmar esta consulta através do Painel Administrativo.`;
  * 2. Patient Notification: Request received and is pending confirmation.
  */
 export function buildPatientNewBookingNotification(
-  payload: AppointmentNotificationPayload
+  payload: AppointmentNotificationPayload,
+  replyToEmail?: string
 ): NotificationMessage {
   const modality = formatModalityPt(payload.appointment_type);
   const formattedDate = formatAppointmentDatePt(payload.appointment_date);
+  const safeNameHtml = escapeHtml(payload.patient_name);
 
   const subject = `Recebemos o seu pedido de marcação — Psicóloga Grace Azevedo da Graça`;
 
@@ -171,7 +217,7 @@ Ovar, Portugal`;
         <p style="margin: 0; color: #5c6f64; font-size: 13px;">Psicóloga Grace Azevedo da Graça &bull; OPP 25999</p>
       </div>
 
-      <p style="font-size: 15px;">Olá <strong>${payload.patient_name}</strong>,</p>
+      <p style="font-size: 15px;">Olá <strong>${safeNameHtml}</strong>,</p>
 
       <p style="font-size: 14px; color: #374151;">
         Obrigado pelo seu contacto. A sua solicitação de consulta foi registada com sucesso e encontra-se <strong>pendente de confirmação</strong>.
@@ -198,12 +244,17 @@ Ovar, Portugal`;
     </div>
   `;
 
+  const replyTo = sanitizeReplyToAddress(
+    replyToEmail ?? resolveAdminNotificationEmail()
+  );
+
   return {
     event: "appointment_created_patient",
     recipient: "patient",
     recipientName: payload.patient_name,
     recipientEmail: payload.patient_email,
     recipientPhone: payload.patient_phone,
+    ...(replyTo ? { replyTo } : {}),
     subject,
     bodyText,
     bodyHtml,
@@ -215,10 +266,12 @@ Ovar, Portugal`;
  * 3. Patient Notification: Appointment confirmed by the psychologist.
  */
 export function buildPatientConfirmedNotification(
-  payload: AppointmentNotificationPayload
+  payload: AppointmentNotificationPayload,
+  replyToEmail?: string
 ): NotificationMessage {
   const modality = formatModalityPt(payload.appointment_type);
   const formattedDate = formatAppointmentDatePt(payload.appointment_date);
+  const safeNameHtml = escapeHtml(payload.patient_name);
 
   const subject = `Consulta Confirmada — Psicóloga Grace Azevedo da Graça`;
 
@@ -235,7 +288,7 @@ Detalhes da Consulta:
 ${
   payload.appointment_type === "presencial"
     ? "O gabinete situa-se na Rua de Timor, 67 – 1.º H, em Ovar. Agradecemos a chegada com 5 minutos de antecedência."
-    : "Consulta online — a plataforma de videochamada será combinada previamente com o utente."
+    : "A consulta online será realizada por videochamada através do WhatsApp no horário agendado."
 }
 
 Caso necessite de alterar ou remarcar a sua consulta, solicitamos que nos contacte com a maior antecedência possível.
@@ -252,7 +305,7 @@ Ovar, Portugal`;
         <p style="margin: 0; color: #5c6f64; font-size: 13px;">Psicóloga Grace Azevedo da Graça &bull; OPP 25999</p>
       </div>
 
-      <p style="font-size: 15px;">Olá <strong>${payload.patient_name}</strong>,</p>
+      <p style="font-size: 15px;">Olá <strong>${safeNameHtml}</strong>,</p>
 
       <p style="font-size: 14px; color: #374151;">
         Temos o prazer de informar que a sua consulta foi <strong>confirmada com sucesso</strong>.
@@ -270,7 +323,7 @@ Ovar, Portugal`;
         ${
           payload.appointment_type === "presencial"
             ? "📍 <strong>Instruções:</strong> O gabinete localiza-se na <em>Rua de Timor, 67 – 1.º H, Ovar</em>. Agradecemos a chegada com cerca de 5 minutos de antecedência."
-            : "💻 <strong>Instruções:</strong> Consulta online — a plataforma de videochamada será combinada previamente com o utente."
+            : "💻 <strong>Instruções:</strong> A consulta online será realizada por videochamada através do WhatsApp no horário agendado."
         }
       </div>
 
@@ -283,12 +336,17 @@ Ovar, Portugal`;
     </div>
   `;
 
+  const replyTo = sanitizeReplyToAddress(
+    replyToEmail ?? resolveAdminNotificationEmail()
+  );
+
   return {
     event: "appointment_confirmed_patient",
     recipient: "patient",
     recipientName: payload.patient_name,
     recipientEmail: payload.patient_email,
     recipientPhone: payload.patient_phone,
+    ...(replyTo ? { replyTo } : {}),
     subject,
     bodyText,
     bodyHtml,
@@ -300,10 +358,12 @@ Ovar, Portugal`;
  * 4. Patient Notification: Appointment cancelled.
  */
 export function buildPatientCancelledNotification(
-  payload: AppointmentNotificationPayload
+  payload: AppointmentNotificationPayload,
+  replyToEmail?: string
 ): NotificationMessage {
   const modality = formatModalityPt(payload.appointment_type);
   const formattedDate = formatAppointmentDatePt(payload.appointment_date);
+  const safeNameHtml = escapeHtml(payload.patient_name);
 
   const subject = `Atualização da Marcação: Cancelada — Psicóloga Grace Azevedo da Graça`;
 
@@ -325,7 +385,7 @@ Ovar, Portugal`;
         <p style="margin: 0; color: #5c6f64; font-size: 13px;">Psicóloga Grace Azevedo da Graça &bull; OPP 25999</p>
       </div>
 
-      <p style="font-size: 15px;">Olá <strong>${payload.patient_name}</strong>,</p>
+      <p style="font-size: 15px;">Olá <strong>${safeNameHtml}</strong>,</p>
 
       <p style="font-size: 14px; color: #374151;">
         Informamos que a sua marcação de consulta para o dia <strong>${formattedDate}</strong> às <strong>${payload.time_slot}</strong> (${modality.title}) foi cancelada.
@@ -344,12 +404,17 @@ Ovar, Portugal`;
     </div>
   `;
 
+  const replyTo = sanitizeReplyToAddress(
+    replyToEmail ?? resolveAdminNotificationEmail()
+  );
+
   return {
     event: "appointment_cancelled_patient",
     recipient: "patient",
     recipientName: payload.patient_name,
     recipientEmail: payload.patient_email,
     recipientPhone: payload.patient_phone,
+    ...(replyTo ? { replyTo } : {}),
     subject,
     bodyText,
     bodyHtml,
