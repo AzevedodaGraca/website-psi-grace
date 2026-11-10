@@ -443,7 +443,7 @@ O website deverá possuir:
 
 ## Atendimento online
 
-As consultas online serão realizadas através do WhatsApp.
+As consultas online serão realizadas através de videochamada.
 
 IMPORTANTE:
 
@@ -456,7 +456,7 @@ Não implementar:
 * Servidor de vídeo.
 * Sistema de conferência.
 
-O website/app deverá apenas facilitar o contato e direcionar o paciente para o WhatsApp.
+O website/app deverá apenas facilitar o contato e o agendamento.
 
 ---
 
@@ -466,7 +466,7 @@ O sistema de agendamento online encontra-se integralmente implementado e funcion
 
 Fluxo implementado (5 etapas):
 
-1. **Modalidade:** Utente escolhe entre Consulta Presencial (Gabinete em Ovar) ou Consulta Online (videochamada via WhatsApp).
+1. **Modalidade:** Utente escolhe entre Consulta Presencial (Gabinete em Ovar) ou Consulta Online (Videochamada).
 2. **Data & Horário:** Seleção em calendário mensal com carregamento dinâmico dos horários disponíveis em horas certas (slots de 1 hora, fuso `Europe/Lisbon`).
 3. **Dados do Utente:** Preenchimento de Nome Completo, E-mail, Telefone/WhatsApp, Observação opcional (com aviso de privacidade) e aceitação obrigatória da Política de Privacidade (RGPD).
 4. **Resumo:** Conferência de todos os dados antes da submissão.
@@ -651,7 +651,7 @@ O aplicativo poderá futuramente oferecer:
 
 O aplicativo NÃO deverá possuir sistema próprio de videochamada.
 
-As consultas online continuarão sendo realizadas através do WhatsApp.
+As consultas online continuarão a ser realizadas através de videochamada.
 
 ---
 
@@ -815,7 +815,7 @@ Quando houver uma fotografia real adequada, priorizá-la em vez de utilizar imag
 
 ## Regra 6 — Não implementar videochamada
 
-Consultas online serão realizadas via WhatsApp.
+Consultas online serão realizadas através de videochamada externa.
 
 ## Regra 7 — Segurança
 
@@ -894,7 +894,7 @@ Antes de instalar uma biblioteca, avaliar se ela é realmente necessária.
 * [x] Áreas de atuação (ansiedade, depressão, burnout, PHDA, etc.).
 * [x] Tipos de atendimento (adultos, casais, famílias, infanto-juvenil).
 * [x] Consultório e galeria de fotos reais.
-* [x] Atendimento presencial e online (via WhatsApp).
+* [x] Atendimento presencial e online (Videochamada).
 * [x] CTA de agendamento online.
 * [x] Seção de contacto e WhatsApp direto.
 * [x] Footer institucional.
@@ -929,7 +929,7 @@ Antes de instalar uma biblioteca, avaliar se ela é realmente necessária.
 ## Sprint 5 — Sistema de Agendamento Online
 
 * [x] Modelagem de slots de consulta de 1 hora (`09:00` às `20:00`).
-* [x] Seleção de modalidade: Consulta Presencial (Ovar) ou Consulta Online (WhatsApp).
+* [x] Seleção de modalidade: Consulta Presencial (Ovar) ou Consulta Online (Videochamada).
 * [x] Calendário mensal interativo com bloqueio de datas passadas.
 * [x] Verificação dinâmica de horários disponíveis no fuso `Europe/Lisbon`.
 * [x] Formulário de contacto do utente com sanitização e validação server-side.

@@ -40,7 +40,7 @@ A stack do projeto é estritamente composta por:
   * Contacto direto e botão flutuante de WhatsApp.
 
 * **Sistema de Marcações Online:**
-  * Modalidades disponíveis: Consulta Presencial (no gabinete em Ovar) e Consulta Online (videochamada via WhatsApp).
+  * Modalidades disponíveis: Consulta Presencial (no gabinete em Ovar) e Consulta Online (Videochamada).
   * Slots de consulta padronizados com duração de 1 hora.
   * Seleção dinâmica de datas com calendário mensal e verificação de disponibilidade em tempo real.
   * Validações de formulário server-side e prevenção rigorosa de conflitos de horário.

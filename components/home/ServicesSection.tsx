@@ -73,7 +73,7 @@ export default function ServicesSection() {
               </p>
             </div>
             <div className="mt-6 pt-4 border-t border-[#d1e3d5] text-xs text-[#1d2a23] font-medium">
-              💻 Videochamada — plataforma a combinar previamente com o utente
+              💻 Videochamada
             </div>
           </div>
         </div>

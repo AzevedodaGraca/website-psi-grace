@@ -174,7 +174,7 @@ The online appointment scheduling system is implemented and functional.
 
 Key architectural rules:
 - Consultations operate in standard 1-hour slots (`FULL_HOUR_SLOTS`).
-- Supported modalities: Presencial (Gabinete em Ovar) and Online (via WhatsApp).
+- Supported modalities: Presencial (Gabinete em Ovar) and Online (Videochamada).
 - Timezone: `Europe/Lisbon`.
 - Business logic resides server-side in `app/booking/actions.ts`.
 - Persistence and conflict prevention are handled in Supabase (`appointments` and `availability_schedules`).
@@ -190,7 +190,7 @@ Online consultations are offered by the psychologist.
 
 Video consultations will NOT be implemented as a custom video-call system inside the website or application.
 
-The intended communication method for video consultations is normal WhatsApp.
+The intended communication method for video consultations is video call (Videochamada), without specifying a mandatory platform.
 
 Do not implement WebRTC, custom video rooms, Zoom-like functionality, or another video platform unless explicitly requested.
 

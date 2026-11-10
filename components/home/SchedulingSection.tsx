@@ -447,7 +447,7 @@ export default function SchedulingSection() {
                   </div>
 
                   <div className="mt-6 pt-4 border-t border-[#d1e3d5]/60 text-xs font-medium text-[#1d2a23]">
-                    💻 Plataforma a combinar previamente com o utente
+                    💻 Videochamada
                   </div>
                 </div>
               </div>

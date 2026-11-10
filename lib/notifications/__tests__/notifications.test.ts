@@ -222,30 +222,32 @@ describe("Integração de E-mails Resend — Website Psi-Grace", () => {
     });
   });
 
-  describe("5. Descrição correta das consultas online via WhatsApp", () => {
-    it("indica videochamada através do WhatsApp em formatModalityPt e nos templates", () => {
+  describe("5. Descrição correta das consultas online (Videochamada genérica)", () => {
+    it("indica Videochamada sem especificar WhatsApp como plataforma obrigatória", () => {
       const onlineModality = formatModalityPt("online");
       assert.equal(onlineModality.title, "Consulta Online");
-      assert.equal(onlineModality.location, "Videochamada através do WhatsApp");
+      assert.equal(onlineModality.location, "Videochamada");
 
       const newBookingMsg = buildPatientNewBookingNotification(samplePayload);
       const confirmedMsg = buildPatientConfirmedNotification(samplePayload);
 
-      assert.ok(newBookingMsg.bodyText.includes("Videochamada através do WhatsApp"));
-      assert.ok(newBookingMsg.bodyHtml?.includes("Videochamada através do WhatsApp"));
+      assert.ok(newBookingMsg.bodyText.includes("- Local / Plataforma: Videochamada"));
+      assert.ok(newBookingMsg.bodyHtml?.includes("<strong>Local:</strong> Videochamada"));
+      assert.ok(!newBookingMsg.bodyText.includes("Videochamada através do WhatsApp"));
+      assert.ok(!newBookingMsg.bodyHtml?.includes("Videochamada através do WhatsApp"));
 
       assert.ok(
         confirmedMsg.bodyText.includes(
-          "A consulta online será realizada por videochamada através do WhatsApp no horário agendado."
+          "A consulta online será realizada através de videochamada no horário agendado."
         )
       );
       assert.ok(
         confirmedMsg.bodyHtml?.includes(
-          "A consulta online será realizada por videochamada através do WhatsApp no horário agendado."
+          "A consulta online será realizada através de videochamada no horário agendado."
         )
       );
-      assert.ok(!confirmedMsg.bodyText.includes("plataforma a combinar"));
-      assert.ok(!confirmedMsg.bodyHtml?.includes("plataforma a combinar"));
+      assert.ok(!confirmedMsg.bodyText.includes("WhatsApp"));
+      assert.ok(!confirmedMsg.bodyHtml?.includes("WhatsApp"));
     });
   });
 
