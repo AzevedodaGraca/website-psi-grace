@@ -6,6 +6,7 @@
 * **Cédula Profissional OPP:** 25999 (Ordem dos Psicólogos Portugueses)
 * **Certificação:** EuroPsy
 * **Localização do Gabinete:** Ovar, Aveiro, Portugal
+* **Website Oficial:** https://grcpsi.pt | https://www.grcpsi.pt
 
 ---
 
@@ -173,3 +174,182 @@ IMPLEMENTAR → VALIDAR → REVISAR → APROVAR → COMMIT → PRÓXIMA FASE
 * [x] **9.4** Documentação & Alinhamento *(Em execução)*
 * [ ] **9.5** Preparação para Deploy *(Pendente)*
 * [ ] **9.6** Validação Final Pré-Lançamento *(Pendente)*
+
+---
+
+# Website Psi-Grace (English Version)
+
+## Identification
+* **Entity:** Institutional website of Psychologist Grace Azevedo da Graça
+* **Activity:** Clinical Psychology
+* **OPP Professional License:** 25999 (Ordem dos Psicólogos Portugueses)
+* **Certification:** EuroPsy
+* **Office Location:** Ovar, Aveiro, Portugal
+* **Official Website:** https://grcpsi.pt | https://www.grcpsi.pt
+
+---
+
+## Project Objective
+This project provides a professional, welcoming, and secure institutional web platform for the practice of clinical psychologist Grace Azevedo da Graça. Its core objectives are to present her clinical approach, areas of practice, and consultation space, provide direct contact via WhatsApp, and offer a complete online appointment request system with an administrative management dashboard and full compliance with the General Data Protection Regulation (GDPR / RGPD).
+
+---
+
+## Official Technology Stack
+The project stack is strictly composed of:
+* **Framework:** Next.js 16.3.8 (App Router, Turbopack, Server Actions)
+* **UI Library:** React 19.2.8
+* **Language:** TypeScript 5
+* **Styling:** Tailwind CSS v4
+* **Backend & Database:** Supabase
+  * PostgreSQL (with dedicated tables for appointments and availability)
+  * Supabase Auth (secure authentication for the administrative area)
+  * Row Level Security (RLS) & Table privilege hardening
+* **Transactional Email Provider:** Resend (using the official SDK and HTML templates in PT-PT)
+* **Package Manager:** npm (with a consistent lockfile `package-lock.json`)
+
+---
+
+## Implemented Features
+
+* **Institutional Website:**
+  * Presentation of the psychologist, academic background, and clinical approach (Systemic and CBT / TCC).
+  * Areas of intervention and specialties (adults, couples, families, children, and adolescents).
+  * Gallery featuring real photographs of the clinic, consultation room, children's space, and building facade.
+  * Location section with the physical address in Ovar and interactive map integration.
+  * Interactive Frequently Asked Questions (FAQ) with practical information.
+  * Direct contact and floating WhatsApp button.
+
+* **Online Appointment Booking System:**
+  * Available modalities: In-Person Consultation (at the office in Ovar) and Online Consultation (Videochamada / Video Call).
+  * Standardized consultation slots with a 1-hour duration.
+  * Dynamic date selection with a monthly calendar and real-time availability verification.
+  * Server-side form validations and strict time-slot conflict prevention.
+
+* **Administrative Dashboard:**
+  * Protected routes `/admin` and `/admin/login`.
+  * Authentication via Supabase Auth protected by Next.js Middleware and server-side privilege verification.
+  * Appointment management (detailed view, confirmation, cancellation, and notes).
+  * Availability management and date/time blocking (`date_overrides`).
+
+* **Email Notifications:**
+  * Automatic dispatch of transactional emails via Resend upon appointment creation, confirmation, or cancellation.
+  * Responsive HTML templates aligned with the clinic's visual identity for both the patient and the psychologist.
+
+* **Privacy and GDPR (RGPD):**
+  * Dedicated institutional page `/privacidade` detailing data processing and protection.
+  * Mandatory prior consent on the booking form with immutable timestamp and policy version logging.
+  * Privacy notice guiding patients not to share sensitive clinical details in the booking request.
+
+* **SEO & Accessibility:**
+  * Canonical metadata, dynamic `sitemap.xml`, and `robots.ts` with explicit protection preventing indexing of `/admin` and `/admin/`.
+  * Complete semantic association of `htmlFor` and `id` across form fields for assistive navigation.
+
+---
+
+## Scheduling Rules
+The scheduling system operates under strict server-validated rules:
+* **Duration:** Consultations have a standard duration of 60 minutes (authorized full-hour slots).
+* **Timezone:** All operations, past/future checks, and bookings operate in the official `Europe/Lisbon` timezone.
+* **Modalities:** Support for in-person and online consultations.
+* **Conflict Prevention:** Atomic database validation preventing concurrent bookings on the same date and time slot.
+* **Blocks and Exceptions:** Priority enforcement for daily or hourly blocking rules configured via the administration panel (`availability_schedules`).
+* **Server-side Validations:** Strict sanitization of name, email (RFC 5322), phone/WhatsApp, and length limits on optional notes.
+* **Consent:** Recording an appointment strictly requires `consent_given === true`.
+
+---
+
+## Administrative Dashboard
+Access to appointment management is located at:
+* `/admin/login` — Authentication of administrative credentials via Supabase Auth.
+* `/admin` — Main control panel.
+
+**Security:**
+* Protected by Next.js Middleware (redirecting unauthenticated users).
+* Server-side user session verification matched against the `ADMIN_EMAIL` variable.
+* Hardened RLS policies in the database (restricted table permissions and server-isolated service role).
+
+---
+
+## Email Notifications (Resend)
+* **Integration:** Implemented via the `resend` package in a strictly server-side environment (`lib/notifications/`).
+* **Templates:** File `lib/notifications/templates.ts` in European Portuguese (PT-PT) containing booking details, office address or video call instructions, and legal privacy notice.
+* **Current Delivery Status:**
+  * The system supports both development and production environments through `RESEND_API_KEY` and `RESEND_FROM_EMAIL`.
+  * In testing/onboarding environments, Resend's default test sender (`onboarding@resend.dev`) can be used for registered account emails.
+  * For production, the verified custom domain must be configured in the Resend dashboard (e.g., `notificacoes@grcpsi.pt`).
+
+---
+
+## Privacy and GDPR (RGPD)
+In compliance with the General Data Protection Regulation (EU Regulation 2016/679):
+* **Policy Page:** Available at `/privacidade`, accessible across the entire website and within the booking form.
+* **Consent Logging:** When appointments are created, the following fields are stored in the database:
+  * `consent_given`: `true`
+  * `consent_timestamp`: ISO UTC timestamp at the moment of submission
+  * `consent_version`: Active policy version (e.g., `2026-10-01`)
+* **Data Minimization:** Collection is strictly limited to the contact details required to manage the consultation.
+* **Clinical Notice:** Visible alert in the form instructing the patient not to enter mental health or diagnostic data in the notes field.
+
+---
+
+## Local Development
+
+### 1. Install Dependencies
+```bash
+npm install
+```
+
+### 2. Environment Variables
+Copy the example file and configure the required values in your `.env.local`:
+```bash
+cp .env.example .env.local
+```
+*(See `.env.example` for the complete list of variables: Supabase, Resend, and canonical URL).*
+
+### 3. Run in Development
+```bash
+npm run dev
+```
+Open `http://localhost:3000`.
+
+### 4. Code Quality and Validation
+Before submitting changes, run the full validation suite:
+```bash
+npm run build      # Validates production build and Turbopack
+npm run lint       # Runs ESLint linter
+npx tsc --noEmit   # Validates strict TypeScript typing
+```
+
+---
+
+## Development Workflow
+The project follows a strict stage-gated delivery lifecycle:
+```text
+IMPLEMENTAR → VALIDAR → REVISAR → APROVAR → COMMIT → PRÓXIMA FASE
+```
+* Do not create automatic commits without diff approval.
+* Do not push or deploy without explicit authorization.
+* Never modify or commit `.env.local` files or active credentials.
+
+---
+
+## Security Best Practices
+* **Environment Files:** `.env.local` is listed in `.gitignore` and must never be committed to the repository.
+* **Service Keys:** `SUPABASE_SERVICE_ROLE_KEY` and `RESEND_API_KEY` are server-only and must never be imported into client components or exposed in the browser bundle.
+* **Database:** Ad-hoc mutation commands (`INSERT`, `UPDATE`, `DELETE`) in the production environment are prohibited without approval.
+* **Deployment:** All production deployments must pass the formal validation stages.
+
+---
+
+## Project Status
+
+* **Phase:** Phase 9 — Production Readiness
+* **Status:** In progress
+
+### Phase 9 Subphases:
+* [x] **9.1** Production Readiness Audit *(Completed)*
+* [x] **9.2** Security & Technical Fixes *(Completed)*
+* [x] **9.3** SEO & Accessibility *(Completed)*
+* [x] **9.4** Documentation & Alignment *(In progress)*
+* [ ] **9.5** Deployment Preparation *(Pending)*
+* [ ] **9.6** Final Pre-Launch Validation *(Pending)*
