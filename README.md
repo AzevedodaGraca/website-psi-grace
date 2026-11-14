@@ -190,7 +190,7 @@ IMPLEMENTAR → VALIDAR → REVISAR → APROVAR → COMMIT → PRÓXIMA FASE
 ---
 
 ## Project Objective
-This project provides a professional, welcoming, and secure institutional web platform for the practice of clinical psychologist Grace Azevedo da Graça. Its core objectives are to present her clinical approach, areas of practice, and consultation space, provide direct contact via WhatsApp, and offer a complete online appointment request system with an administrative management dashboard and full compliance with the General Data Protection Regulation (GDPR / RGPD).
+This project provides a professional, welcoming, and secure institutional web platform for the practice of clinical psychologist Grace Azevedo da Graça. Its core objectives are to present her clinical approach, areas of practice, and consultation space, provide direct contact via WhatsApp, and offer a complete online appointment request system with an administrative management dashboard. The platform includes privacy and data protection features designed to support compliance with the General Data Protection Regulation (GDPR / RGPD).
 
 ---
 
@@ -220,7 +220,7 @@ The project stack is strictly composed of:
   * Direct contact and floating WhatsApp button.
 
 * **Online Appointment Booking System:**
-  * Available modalities: In-Person Consultation (at the office in Ovar) and Online Consultation (Videochamada / Video Call).
+  * Available modalities: In-Person Consultation (at the office in Ovar) and Online Consultation (Video Call).
   * Standardized consultation slots with a 1-hour duration.
   * Dynamic date selection with a monthly calendar and real-time availability verification.
   * Server-side form validations and strict time-slot conflict prevention.
@@ -325,7 +325,7 @@ npx tsc --noEmit   # Validates strict TypeScript typing
 ## Development Workflow
 The project follows a strict stage-gated delivery lifecycle:
 ```text
-IMPLEMENTAR → VALIDAR → REVISAR → APROVAR → COMMIT → PRÓXIMA FASE
+IMPLEMENT → VALIDATE → REVIEW → APPROVE → COMMIT → NEXT PHASE
 ```
 * Do not create automatic commits without diff approval.
 * Do not push or deploy without explicit authorization.
