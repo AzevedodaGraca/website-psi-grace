@@ -17,7 +17,7 @@ O projeto disponibiliza uma plataforma web institucional profissional, acolhedor
 
 ## Stack Tecnológica Oficial
 A stack do projeto é estritamente composta por:
-* **Framework:** Next.js 16.3.8 (App Router, Turbopack, Server Actions)
+* **Framework:** Next.js 16.4.6 (App Router, Turbopack, Server Actions)
 * **Biblioteca UI:** React 19.2.8
 * **Linguagem:** TypeScript 5
 * **Estilos:** Tailwind CSS v4
@@ -164,16 +164,16 @@ IMPLEMENTAR → VALIDAR → REVISAR → APROVAR → COMMIT → PRÓXIMA FASE
 
 ## Estado do Projeto
 
-* **Fase:** Phase 9 — Production Readiness
-* **Status:** Em andamento
+* **Fase:** Phase 10 — Em Produção (`https://grcpsi.pt`)
+* **Status:** Concluído e em operação
 
-### Subfases da Phase 9:
+### Subfases da Phase 9 (Production Readiness):
 * [x] **9.1** Auditoria de Production Readiness *(Concluída)*
 * [x] **9.2** Segurança & Correções Técnicas *(Concluída)*
 * [x] **9.3** SEO & Acessibilidade *(Concluída)*
-* [x] **9.4** Documentação & Alinhamento *(Em execução)*
-* [ ] **9.5** Preparação para Deploy *(Pendente)*
-* [ ] **9.6** Validação Final Pré-Lançamento *(Pendente)*
+* [x] **9.4** Documentação & Alinhamento *(Concluída)*
+* [x] **9.5** Preparação para Deploy *(Concluída)*
+* [x] **9.6** Validação Final Pré-Lançamento *(Concluída)*
 
 ---
 
@@ -196,7 +196,7 @@ This project provides a professional, welcoming, and secure institutional web pl
 
 ## Official Technology Stack
 The project stack is strictly composed of:
-* **Framework:** Next.js 16.3.8 (App Router, Turbopack, Server Actions)
+* **Framework:** Next.js 16.4.6 (App Router, Turbopack, Server Actions)
 * **UI Library:** React 19.2.8
 * **Language:** TypeScript 5
 * **Styling:** Tailwind CSS v4
@@ -343,13 +343,13 @@ IMPLEMENT → VALIDATE → REVIEW → APPROVE → COMMIT → NEXT PHASE
 
 ## Project Status
 
-* **Phase:** Phase 9 — Production Readiness
-* **Status:** In progress
+* **Phase:** Phase 10 — Live in Production (`https://grcpsi.pt`)
+* **Status:** Completed and operational
 
-### Phase 9 Subphases:
+### Phase 9 Subphases (Production Readiness):
 * [x] **9.1** Production Readiness Audit *(Completed)*
 * [x] **9.2** Security & Technical Fixes *(Completed)*
 * [x] **9.3** SEO & Accessibility *(Completed)*
-* [x] **9.4** Documentation & Alignment *(In progress)*
-* [ ] **9.5** Deployment Preparation *(Pending)*
-* [ ] **9.6** Final Pre-Launch Validation *(Pending)*
+* [x] **9.4** Documentation & Alignment *(Completed)*
+* [x] **9.5** Deployment Preparation *(Completed)*
+* [x] **9.6** Final Pre-Launch Validation *(Completed)*

@@ -1,9 +1,9 @@
 # PROJECT BRIEF — Website Psicóloga Grace Azevedo da Graça
 
-**Versão:** 1.1
-**Status:** Production Readiness
-**Fase atual:** Phase 9
-**Subfase:** 9.4 — Documentação & Alinhamento
+**Versão:** 1.2
+**Status:** Em Produção (`https://grcpsi.pt`)
+**Fase atual:** Phase 10 — Concluída
+**Subfase:** Em operação
 **Projeto:** Website profissional da Psicóloga Grace Azevedo da Graça
 **Localização:** Ovar, Aveiro, Portugal
 
@@ -596,7 +596,7 @@ Este projeto opera sob as diretrizes do **Regulamento Geral sobre a Proteção d
 # 28. Arquitetura Tecnológica Atual
 
 ## Frontend
-* **Framework:** Next.js 16.3.8 (App Router, Turbopack, Server Actions)
+* **Framework:** Next.js 16.4.6 (App Router, Turbopack, Server Actions)
 * **Biblioteca UI:** React 19.2.8
 * **Linguagem:** TypeScript 5
 * **Estilização:** Tailwind CSS v4
@@ -973,22 +973,22 @@ Antes de instalar uma biblioteca, avaliar se ela é realmente necessária.
 ## Sprint 9 — Qualidade & Production Readiness (Phase 9)
 
 * [x] **Phase 9.1 — Auditoria de Production Readiness:** Concluída. Mapeamento de vulnerabilidades, lint e requisitos de lançamento.
-* [x] **Phase 9.2 — Segurança & Correções Técnicas:** Concluída. Atualização do Next.js de 16.3.1 para a versão de patch 16.3.8 (resolvendo CVEs e sharp), limpeza de warning no lint e integridade do lockfile.
+* [x] **Phase 9.2 — Segurança & Correções Técnicas:** Concluída. Atualização do Next.js para a versão de patch 16.4.6 (resolvendo CVEs e alertas do `npm audit`), limpeza de warning no lint e integridade do lockfile.
 * [x] **Phase 9.3 — SEO & Acessibilidade:** Concluída. Proteção em `app/robots.ts` impedindo indexação de `/admin` e `/admin/`; associação semântica de `htmlFor` e `id` no formulário de marcação.
-* [x] **Phase 9.4 — Documentação & Alinhamento:** Em andamento. Alinhamento de README.md, PROJECT_BRIEF.md e AGENTS.md com a realidade do projeto.
-* [ ] **Phase 9.5 — Preparação para Deploy:** Pendente. Verificação de build de produção, checklist de variáveis de ambiente de produção e domínio.
-* [ ] **Phase 9.6 — Validação Final Pré-Lançamento:** Pendente. Smoke tests finais de rotas, formulários e fluxos antes da publicação definitiva.
+* [x] **Phase 9.4 — Documentação & Alinhamento:** Concluída. Alinhamento bilingue de README.md, PROJECT_BRIEF.md e AGENTS.md com a realidade do projeto.
+* [x] **Phase 9.5 — Preparação para Deploy:** Concluída. Verificação de build de produção, checklist de variáveis de ambiente de produção e domínio.
+* [x] **Phase 9.6 — Validação Final Pré-Lançamento:** Concluída. Smoke tests finais de rotas, formulários, notificações Resend e limpeza da base de dados de produção.
 
 ---
 
 ## Sprint 10 — Lançamento e Publicação em Produção
 
-* [ ] Configurar domínio próprio de produção (ex.: `grcpsi.pt`).
-* [ ] Configurar projeto de produção na Vercel com DNS definitivo.
-* [ ] Configurar domínio e remetente corporativo verificado no Resend.
-* [ ] Configurar variáveis de ambiente definitivas de produção.
-* [ ] Testes de validação finais em produção (smoke tests).
-* [ ] Publicação oficial e abertura ao público.
+* [x] Configurar domínio próprio de produção (`grcpsi.pt`).
+* [x] Configurar projeto de produção na Vercel com DNS definitivo.
+* [x] Configurar domínio e remetente corporativo verificado no Resend (`notificacoes@grcpsi.pt`).
+* [x] Configurar variáveis de ambiente definitivas de produção.
+* [x] Testes de validação finais em produção (smoke tests).
+* [x] Publicação oficial e abertura ao público.
 
 ---
 
@@ -1043,7 +1043,7 @@ A identidade, as fotografias, a árvore, as informações profissionais e a expe
 * [x] Árvore oficial da identidade visual integrada no header, footer e elementos de design.
 
 ## Desenvolvimento de Software
-* [x] Projeto Next.js 16.3.8 estruturado com TypeScript e Tailwind CSS v4.
+* [x] Projeto Next.js 16.4.6 estruturado com TypeScript e Tailwind CSS v4.
 * [x] Repositório Git com histórico rigoroso de commits e branches.
 * [x] Frontend responsivo completo com todas as seções institucionais.
 * [x] Sistema de agendamento online funcional com prevenção de conflitos.
@@ -1053,7 +1053,7 @@ A identidade, as fotografias, a árvore, as informações profissionais e a expe
 * [x] Página de política de privacidade `/privacidade` e consentimento RGPD.
 * [x] SEO e regras de `robots.txt` para proteção da área administrativa.
 * [x] Chatbot: **ADIADO / FORA DO ESCOPO DO LANÇAMENTO INICIAL**.
-* [ ] Deploy em produção (aguardando conclusão das subfases 9.5 e 9.6).
+* [x] Deploy em produção (`https://grcpsi.pt`).
 
 ---
 

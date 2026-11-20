@@ -287,15 +287,15 @@ Status by Phase:
 5. **Phase 6 — WhatsApp Flow & Clinic Content Alignment:** CONCLUÍDA
 6. **Phase 7 — Supabase Backend & Admin Management Area (`/admin`):** CONCLUÍDA
 7. **Phase 8 — Transactional Email Notifications (Resend):** CONCLUÍDA
-8. **Phase 9 — Production Readiness:** EM ANDAMENTO
+8. **Phase 9 — Production Readiness:** CONCLUÍDA
    - **9.1** Auditoria de Production Readiness — CONCLUÍDA
-   - **9.2** Segurança & Correções Técnicas (Next.js 16.3.8 patch) — CONCLUÍDA
+   - **9.2** Segurança & Correções Técnicas (Next.js 16.4.6 patch) — CONCLUÍDA
    - **9.3** SEO & Acessibilidade — CONCLUÍDA
-   - **9.4** Documentação & Alinhamento — EM ANDAMENTO
-   - **9.5** Preparação para Deploy — PENDENTE
-   - **9.6** Validação Final Pré-Lançamento — PENDENTE
+   - **9.4** Documentação & Alinhamento — CONCLUÍDA
+   - **9.5** Preparação para Deploy — CONCLUÍDA
+   - **9.6** Validação Final Pré-Lançamento — CONCLUÍDA
 9. **Chatbot de IA:** ADIADO / PÓS-LANÇAMENTO
-10. **Phase 10 — Lançamento Oficial em Produção (Vercel & Domínio):** PENDENTE
+10. **Phase 10 — Lançamento Oficial em Produção (Vercel & Domínio `grcpsi.pt`):** CONCLUÍDA
 11. **Mobile Application (Dart/Flutter):** FASE POSTERIOR PÓS-LANÇAMENTO
 
 ---
