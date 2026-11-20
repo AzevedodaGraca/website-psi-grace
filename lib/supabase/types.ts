@@ -69,6 +69,18 @@ export type AdminUser = {
   created_at: string;
 };
 
+export type BookingRateLimitRow = {
+  key_hash: string;
+  attempt_timestamps: string[];
+  updated_at: string;
+};
+
+export type CheckBookingRateLimitRpcResult = {
+  allowed: boolean;
+  reason?: "ip_limit_exceeded" | "email_limit_exceeded" | "phone_limit_exceeded";
+  retry_after_seconds?: number;
+};
+
 // Database Schema interface for Supabase Client
 export interface Database {
   public: {
@@ -102,12 +114,37 @@ export interface Database {
         Update: Partial<Omit<AdminUser, "id">>;
         Relationships: [];
       };
+      booking_rate_limits: {
+        Row: BookingRateLimitRow;
+        Insert: {
+          key_hash: string;
+          attempt_timestamps?: string[];
+          updated_at?: string;
+        };
+        Update: {
+          key_hash?: string;
+          attempt_timestamps?: string[];
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
       is_admin: {
         Args: Record<string, never>;
         Returns: boolean;
+      };
+      check_and_record_booking_rate_limit: {
+        Args: {
+          p_ip_hash: string | null;
+          p_email_hash: string;
+          p_phone_hash: string;
+          p_window_seconds?: number;
+          p_max_ip?: number;
+          p_max_contact?: number;
+        };
+        Returns: CheckBookingRateLimitRpcResult;
       };
     };
     Enums: Record<string, never>;

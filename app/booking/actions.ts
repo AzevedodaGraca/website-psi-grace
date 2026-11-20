@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import {
   type AppointmentType,
   type FullHourTimeSlot,
@@ -7,6 +8,34 @@ import {
 } from "@/lib/supabase/types";
 import { createServerSupabaseAdminClient } from "@/lib/supabase/server";
 import { dispatchAppointmentCreatedNotifications } from "@/lib/notifications/service";
+import type { AppointmentNotificationPayload } from "@/lib/notifications/types";
+import {
+  BOOKING_RATE_LIMIT_UNAVAILABLE_MESSAGE,
+  SlidingWindowRateLimiter,
+  enforceDistributedBookingRateLimit,
+  extractClientIpFromHeaders,
+} from "@/lib/security/rate-limit";
+
+export interface BookingActionDependencies {
+  getClientIp?: () => Promise<string | null> | string | null;
+  localPreFilter?: SlidingWindowRateLimiter;
+  rateLimitSecretOverride?: string;
+  nowMs?: number;
+  createSupabaseAdmin?: typeof createServerSupabaseAdminClient;
+  dispatchNotifications?: (
+    payload: AppointmentNotificationPayload
+  ) => Promise<unknown>;
+  getNow?: typeof getNowInLisbon;
+}
+
+async function resolveRequestClientIp(): Promise<string | null> {
+  try {
+    const reqHeaders = await headers();
+    return extractClientIpFromHeaders((name) => reqHeaders.get(name));
+  } catch {
+    return null;
+  }
+}
 
 export interface CreateAppointmentInput {
   appointment_type: AppointmentType | string;
@@ -123,11 +152,12 @@ function isValidPhone(phone: string): boolean {
 
 /**
  * Core server action for booking a patient consultation.
- * Validates all input data, checks schedule availability and slot conflicts,
- * and inserts the appointment with status 'pending'.
+ * Validates all input data, enforces multi-layer rate limiting, checks schedule availability
+ * and slot conflicts, and inserts the appointment with status 'pending'.
  */
 export async function bookAppointment(
-  input: CreateAppointmentInput
+  input: CreateAppointmentInput,
+  deps?: BookingActionDependencies
 ): Promise<BookingActionResult> {
   try {
     // 1. Basic payload validation
@@ -248,8 +278,8 @@ export async function bookAppointment(
       };
     }
 
-    // 9. Prevent booking dates or times in the past (Europe/Lisbon timezone)
-    const nowInLisbon = await getNowInLisbon();
+    // 9B. Prevent booking dates or times in the past (Europe/Lisbon timezone)
+    const nowInLisbon = await (deps?.getNow ?? getNowInLisbon)();
     if (sanitizedDate < nowInLisbon.dateStr) {
       return {
         success: false,
@@ -273,8 +303,65 @@ export async function bookAppointment(
       }
     }
 
+    // 9C. Initialize server-only Supabase admin client (Fail-Closed if service_role credentials are invalid)
+    let supabaseAdmin: ReturnType<typeof createServerSupabaseAdminClient>;
+    try {
+      supabaseAdmin = (
+        deps?.createSupabaseAdmin ?? createServerSupabaseAdminClient
+      )();
+    } catch {
+      console.error(
+        "[Segurança/Booking] Falha ao inicializar cliente Supabase service_role (Fail-Closed)."
+      );
+      return {
+        success: false,
+        error: BOOKING_RATE_LIMIT_UNAVAILABLE_MESSAGE,
+      };
+    }
+
+    // 9D. Distributed Two-Layer Rate Limiting (Layer 1 In-Memory Pre-Filter + Layer 2 Authoritative PostgreSQL RPC)
+    const clientIp = deps?.getClientIp
+      ? await deps.getClientIp()
+      : await resolveRequestClientIp();
+
+    const rateLimitCheck = await enforceDistributedBookingRateLimit(
+      {
+        ip: clientIp,
+        email: sanitizedEmail,
+        phone: sanitizedPhone,
+        nowMs: deps?.nowMs,
+        secretOverride: deps?.rateLimitSecretOverride,
+      },
+      {
+        localPreFilter: deps?.localPreFilter,
+        rpcInvoker: async (rpcArgs) => {
+          const { data, error } = await supabaseAdmin.rpc(
+            "check_and_record_booking_rate_limit",
+            rpcArgs
+          );
+          return {
+            data: data as {
+              allowed?: unknown;
+              reason?: unknown;
+              retry_after_seconds?: unknown;
+            } | null,
+            error: error
+              ? { code: error.code, message: error.message }
+              : null,
+          };
+        },
+      }
+    );
+
+    if (!rateLimitCheck.allowed) {
+      return {
+        success: false,
+        error:
+          rateLimitCheck.errorMessage ?? BOOKING_RATE_LIMIT_UNAVAILABLE_MESSAGE,
+      };
+    }
+
     // 10. Verify availability against availability_schedules using server-only admin client
-    const supabaseAdmin = createServerSupabaseAdminClient();
 
     // A. Check for specific date overrides first
     const { data: dateOverrides, error: dateOverridesError } = await supabaseAdmin
@@ -435,7 +522,9 @@ export async function bookAppointment(
 
     // Dispatch appointment creation notifications (non-blocking for booking outcome)
     try {
-      await dispatchAppointmentCreatedNotifications({
+      const notifyFn =
+        deps?.dispatchNotifications ?? dispatchAppointmentCreatedNotifications;
+      await notifyFn({
         id: newAppointment.id,
         appointment_type: sanitizedType,
         appointment_date: sanitizedDate,
