@@ -470,7 +470,7 @@ Fluxo implementado (5 etapas):
 2. **Data & Horário:** Seleção em calendário mensal com carregamento dinâmico dos horários disponíveis em horas certas (slots de 1 hora, fuso `Europe/Lisbon`).
 3. **Dados do Utente:** Preenchimento de Nome Completo, E-mail, Telefone/WhatsApp, Observação opcional (com aviso de privacidade) e aceitação obrigatória da Política de Privacidade (RGPD).
 4. **Resumo:** Conferência de todos os dados antes da submissão.
-5. **Confirmação:** Gravação atómica no Supabase com status `pending`, prevenção rigorosa de conflitos e disparo imediato de e-mails transacionais (via Resend) para o utente e para a psicóloga.
+5. **Confirmação:** Validação de rate limiting distribuído server-side (PostgreSQL + HMAC-SHA256), gravação atómica no Supabase com status `pending`, prevenção rigorosa de conflitos e disparo imediato de e-mails transacionais (via Resend) para o utente e para a psicóloga.
 
 ---
 
@@ -589,7 +589,14 @@ Este projeto opera sob as diretrizes do **Regulamento Geral sobre a Proteção d
   * `consent_version` (versão da política aceite, ex.: `2026-10-01`).
 * **Proteção de Dados Clínicos:** Alerta proeminente no formulário informando o utente para não descrever dados clínicos ou diagnósticos no campo de observações.
 * **Minimização de Dados:** Apenas os dados de contacto indispensáveis para o agendamento são recolhidos.
-* **Isolamento de Credenciais:** Nenhuma chave secreta (`SUPABASE_SERVICE_ROLE_KEY` ou `RESEND_API_KEY`) é exposta ao cliente. `.env.local` é estritamente ignorado pelo Git.
+* **Rate Limiting Distribuído e Pseudonimização (Phase 9.7):**
+  * Proteção server-side contra abuso e spam no formulário de marcação através de estado partilhado em PostgreSQL (`public.booking_rate_limits` e RPC `public.check_and_record_booking_rate_limit`), eficaz em múltiplas instâncias serverless.
+  * **Pseudonimização HMAC-SHA256:** Os identificadores de IP canónico (IPv4/IPv6), e-mail normalizado e telefone normalizado nunca são armazenados em texto limpo na tabela de rate limit; são convertidos em digests HMAC-SHA256 com separação de domínio (`ip:`, `email:`, `phone:`) utilizando uma chave derivada de `RATE_LIMIT_SECRET` (com fallback seguro para `SUPABASE_SERVICE_ROLE_KEY`).
+  * **Limites em Janela Deslizante (15 minutos / 900 segundos):** Máximo de **5 pedidos por IP**, **3 pedidos por e-mail** e **3 pedidos por telefone**.
+  * **Atomicidade e Advisory Locks de 64 bits:** Utilização de `pg_advisory_xact_lock(hashtextextended(...))` com ordenação lexicográfica das chaves para evitar deadlocks e garantir avaliação atómica (*all-or-nothing* — nenhum contador é incrementado se qualquer uma das três dimensões exceder o limite).
+  * **Comportamento Fail-Closed:** Qualquer erro de base de dados, falha da RPC ou ausência de segredo criptográfico bloqueia o pedido com segurança sem expor dados internos nem gravar PII nos logs.
+  * **Hardening de Privilégios e RLS:** Função `SECURITY DEFINER` com proprietário `postgres` e `SET search_path = pg_catalog, public`; RLS ativo na tabela `public.booking_rate_limits` sem políticas públicas (default deny); acesso direto à tabela revogado para `PUBLIC`, `anon`, `authenticated` e `service_role`; permissão `EXECUTE` na RPC concedida exclusivamente a `service_role`.
+* **Isolamento de Credenciais:** Nenhuma chave secreta (`SUPABASE_SERVICE_ROLE_KEY`, `RATE_LIMIT_SECRET` ou `RESEND_API_KEY`) é exposta ao cliente. `.env.local` é estritamente ignorado pelo Git.
 
 ---
 
@@ -978,6 +985,7 @@ Antes de instalar uma biblioteca, avaliar se ela é realmente necessária.
 * [x] **Phase 9.4 — Documentação & Alinhamento:** Concluída. Alinhamento bilingue de README.md, PROJECT_BRIEF.md e AGENTS.md com a realidade do projeto.
 * [x] **Phase 9.5 — Preparação para Deploy:** Concluída. Verificação de build de produção, checklist de variáveis de ambiente de produção e domínio.
 * [x] **Phase 9.6 — Validação Final Pré-Lançamento:** Concluída. Smoke tests finais de rotas, formulários, notificações Resend e limpeza da base de dados de produção.
+* [x] **Phase 9.7 — Distributed Booking Rate Limiting:** Concluída. Implementação de rate limiting distribuído em PostgreSQL (`public.booking_rate_limits` + RPC `public.check_and_record_booking_rate_limit`) com pseudonimização HMAC-SHA256 (`RATE_LIMIT_SECRET`), limites em janela deslizante de 15 minutos por IP (5), e-mail (3) e telefone (3), `pg_advisory_xact_lock` (64-bit `hashtextextended`), política fail-closed, hardening de privilégios (`SECURITY DEFINER`, `SET search_path = pg_catalog, public`) e suite de 32 testes automatizados (incluindo testes de integração reais em PostgreSQL 16).
 
 ---
 
@@ -1047,6 +1055,7 @@ A identidade, as fotografias, a árvore, as informações profissionais e a expe
 * [x] Repositório Git com histórico rigoroso de commits e branches.
 * [x] Frontend responsivo completo com todas as seções institucionais.
 * [x] Sistema de agendamento online funcional com prevenção de conflitos.
+* [x] Rate limiting distribuído em PostgreSQL com pseudonimização HMAC-SHA256, advisory locks e política fail-closed (Phase 9.7).
 * [x] Base de dados PostgreSQL no Supabase com RLS ativado.
 * [x] Autenticação e painel administrativo `/admin` funcional.
 * [x] Provedor de e-mails transacionais via Resend com templates em PT-PT.

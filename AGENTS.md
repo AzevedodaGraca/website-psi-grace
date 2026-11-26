@@ -178,6 +178,12 @@ Key architectural rules:
 - Timezone: `Europe/Lisbon`.
 - Business logic resides server-side in `app/booking/actions.ts`.
 - Persistence and conflict prevention are handled in Supabase (`appointments` and `availability_schedules`).
+- Distributed booking rate limiting (`lib/security/rate-limit.ts` + PostgreSQL RPC `public.check_and_record_booking_rate_limit` on `public.booking_rate_limits`):
+  - Enforces a 15-minute (900s) sliding window across three dimensions: **5 requests per IP**, **3 requests per email**, and **3 requests per phone number**.
+  - Pseudonymizes canonical client IP (IPv4/IPv6), normalized email, and normalized phone using **HMAC-SHA256** (`RATE_LIMIT_SECRET` with fallback to `SUPABASE_SERVICE_ROLE_KEY`, key derivation label `psi-grace:rate-limit:v1`) and domain-separated prefixes (`ip:`, `email:`, `phone:`) so raw personal identifiers are never stored in `public.booking_rate_limits`.
+  - Uses lexicographically ordered 64-bit transaction-scoped advisory locks (`pg_advisory_xact_lock` with `hashtextextended`) for atomic, deadlock-free all-or-nothing evaluation across all three identifiers.
+  - Operates **fail-closed** (any database, RPC, or configuration error blocks the submission safely).
+  - Hardened with `SECURITY DEFINER`, `OWNER TO postgres`, `SET search_path = pg_catalog, public`, RLS enabled (default deny), zero direct table privileges for `PUBLIC`, `anon`, `authenticated`, or `service_role`, and `EXECUTE` on the RPC granted exclusively to `service_role`.
 - RGPD consent is strictly required on every submission (`consent_given`, `consent_timestamp`, `consent_version`).
 - Future modifications must respect the existing data model, schemas, and RLS policies.
 - Do not alter booking rules, slots, or validation constraints without explicit authorization.
@@ -294,6 +300,7 @@ Status by Phase:
    - **9.4** Documentação & Alinhamento — CONCLUÍDA
    - **9.5** Preparação para Deploy — CONCLUÍDA
    - **9.6** Validação Final Pré-Lançamento — CONCLUÍDA
+   - **9.7** Distributed Booking Rate Limiting (PostgreSQL + HMAC-SHA256) — CONCLUÍDA
 9. **Chatbot de IA:** ADIADO / PÓS-LANÇAMENTO
 10. **Phase 10 — Lançamento Oficial em Produção (Vercel & Domínio `grcpsi.pt`):** CONCLUÍDA
 11. **Mobile Application (Dart/Flutter):** FASE POSTERIOR PÓS-LANÇAMENTO
